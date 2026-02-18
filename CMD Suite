@@ -214,18 +214,23 @@ local function chatMsg(msg)
 end
 
 local function spinFlingAt(targetRoot)
-	if not targetRoot then return end
-	-- Apply spin + velocity directly to the target (IY-style)
+	local r=getRoot(); if not r or not targetRoot then return end
+	local h=getHum()
+	-- TP our character into the target
+	r.CFrame=targetRoot.CFrame+Vector3.new(0,1,0)
+	if h then h.PlatformStand=true end
+	-- Spin our character — collides with target's parts and launches them
 	local bav=Instance.new("BodyAngularVelocity")
-	bav.AngularVelocity=Vector3.new(0,math.random(500,1000),0)
-	bav.MaxTorque=Vector3.new(0,9e9,0)
-	bav.P=9e4; bav.Parent=targetRoot
+	bav.AngularVelocity=Vector3.new(0,4000,0)
+	bav.MaxTorque=Vector3.new(9e9,9e9,9e9)
+	bav.P=9e9; bav.Parent=r
 	local bv=Instance.new("BodyVelocity")
-	bv.Velocity=Vector3.new(math.random(-200,200),math.random(50,200),math.random(-200,200))
+	bv.Velocity=Vector3.new(0,50,0)
 	bv.MaxForce=Vector3.new(9e9,9e9,9e9)
-	bv.P=9e4; bv.Parent=targetRoot
-	game:GetService("Debris"):AddItem(bav,0.2)
-	game:GetService("Debris"):AddItem(bv,0.2)
+	bv.P=9e9; bv.Parent=r
+	task.wait(0.5)
+	bav:Destroy(); bv:Destroy()
+	if h then h.PlatformStand=false end
 end
 
 local function flingPlayer(name)
@@ -235,14 +240,18 @@ local function flingPlayer(name)
 		local count=0
 		for _,p in ipairs(others) do
 			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-			if tc then spinFlingAt(tc); count+=1 end
+			if tc then
+				count+=1
+				task.spawn(spinFlingAt, tc)
+				task.wait(0.4) -- stagger so our char returns before next fling
+			end
 		end
 		return "Flung "..count.." players"
 	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 	if not tc then return "Character not loaded" end
-	spinFlingAt(tc)
+	task.spawn(spinFlingAt, tc)
 	return "Flung "..p.Name
 end
 
