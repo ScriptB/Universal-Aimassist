@@ -39,6 +39,13 @@ local teamCheck = false
 local healthCheck = false
 local minHealth = 0
 
+local aimbotIncludeNPCs = false
+local espIncludeNPCs = false
+local npcScanInterval = 1
+local npcMaxTargets = 60
+local npcLastScan = 0
+local npcTargets = {}
+
 local circleColor = Color3.fromRGB(255, 0, 0)
 local targetedCircleColor = Color3.fromRGB(0, 255, 0)
 
@@ -109,20 +116,48 @@ local aimFovStep = 10
 
 local currentTarget = nil
 
-local function checkTeam(player)
-    if teamCheck and player.Team == plr.Team then
-        return true
-    end
-    return false
+local function getRootPart(character)
+	return character and (character:FindFirstChild("HumanoidRootPart")
+		or character:FindFirstChild("UpperTorso")
+		or character:FindFirstChild("Torso")
+		or character:FindFirstChild("LowerTorso"))
+end
+
+local function getAimPart(character)
+	return character and (character:FindFirstChild("Head") or getRootPart(character))
+end
+
+local function resolveCharacter(target)
+	if typeof(target) == "Instance" then
+		if target:IsA("Player") then
+			return target.Character, target
+		end
+		if target:IsA("Model") then
+			return target, players:GetPlayerFromCharacter(target)
+		end
+	end
+	if type(target) == "table" then
+		local char = target.Character
+		if typeof(char) == "Instance" and char:IsA("Model") then
+			return char, players:GetPlayerFromCharacter(char)
+		end
+	end
+	return nil, nil
+end
+
+local function checkTeam(target)
+	if not teamCheck then return false end
+	local _, p = resolveCharacter(target)
+	return p ~= nil and p.Team == plr.Team
 end
 
 local function checkWall(targetCharacter)
     if not targetCharacter then return false end
-    local targetHead = targetCharacter:FindFirstChild("Head")
-    if not targetHead then return false end
+    local targetPart = getAimPart(targetCharacter)
+    if not targetPart then return false end
 
     local origin = camera.CFrame.Position
-    local direction = targetHead.Position - origin
+	local direction = targetPart.Position - origin
 	if direction.Magnitude <= 0 then return false end
 
     local ignore = {targetCharacter, workspace.CurrentCamera}
@@ -151,7 +186,80 @@ local function checkWall(targetCharacter)
 	return false
 end
 
+local createESP, removeESP
+
+local function ensureNPCScan()
+	if not (aimbotIncludeNPCs or espIncludeNPCs) then
+		if next(npcTargets) then
+			for model in pairs(npcTargets) do
+				npcTargets[model] = nil
+				removeESP(model)
+			end
+		end
+		return
+	end
+	local now = os.clock()
+	if now - npcLastScan < npcScanInterval then return end
+	npcLastScan = now
+
+	local found = {}
+	local count = 0
+	local inspected = 0
+	local maxInspect = 6000
+	local roots = {}
+	for _, name in ipairs({"NPCs","Bots","Mobs","Enemies","Enemy","AI"}) do
+		local inst = workspace:FindFirstChild(name)
+		if inst then
+			roots[#roots + 1] = inst
+		end
+	end
+	if #roots == 0 then
+		roots[1] = workspace
+	end
+
+	for _, root in ipairs(roots) do
+		for _, hum in ipairs(root:GetDescendants()) do
+			inspected += 1
+			if inspected >= maxInspect then break end
+			if hum:IsA("Humanoid") and hum.Health > 0 then
+				local model = hum.Parent
+				while model and not model:IsA("Model") do
+					model = model.Parent
+				end
+				if model and model:IsA("Model") and model ~= plr.Character and players:GetPlayerFromCharacter(model) == nil then
+					local part = getAimPart(model)
+					local rootPart = getRootPart(model)
+					if part and rootPart then
+						found[model] = true
+						count += 1
+						if count >= npcMaxTargets then
+							break
+						end
+					end
+				end
+			end
+		end
+		if count >= npcMaxTargets or inspected >= maxInspect then
+			break
+		end
+	end
+
+	for model in pairs(npcTargets) do
+		if not found[model] then
+			npcTargets[model] = nil
+			removeESP(model)
+		end
+	end
+	for model in pairs(found) do
+		npcTargets[model] = true
+		if espIncludeNPCs and ESPData[model] == nil then
+			createESP(model)
+		end
+	end
+end
+
 local function getTarget()
+	ensureNPCScan()
     local nearestPlayer = nil
     local shortestCursorDistance = aimFov
     local shortestPlayerDistance = math.huge
@@ -159,14 +267,14 @@ local function getTarget()
     for _, player in ipairs(players:GetPlayers()) do
         local character = player.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-        local head = character and character:FindFirstChild("Head")
-        if player ~= plr and character and humanoid and humanoid.Health > 0 and head and not checkTeam(player) then
+        local aimPart = getAimPart(character)
+        if player ~= plr and character and humanoid and humanoid.Health > 0 and aimPart and not checkTeam(character) then
             if humanoid.Health >= minHealth or not healthCheck then
-                local headPos = camera:WorldToViewportPoint(head.Position)
+                local headPos = camera:WorldToViewportPoint(aimPart.Position)
                 local screenPos = Vector2.new(headPos.X, headPos.Y)
                 local mousePos = Vector2.new(mouse.X, mouse.Y)
                 local cursorDistance = (screenPos - mousePos).Magnitude
-                local playerDistance = (head.Position - cameraPos).Magnitude
+                local playerDistance = (aimPart.Position - cameraPos).Magnitude
                 if cursorDistance < shortestCursorDistance and headPos.Z > 0 then
                     if (not wallCheck) or (not checkWall(character)) then
                         if playerDistance < shortestPlayerDistance then
@@ -179,15 +287,42 @@ local function getTarget()
             end
         end
     end
+
+	if aimbotIncludeNPCs then
+		for model in pairs(npcTargets) do
+			local character = model
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local aimPart = getAimPart(character)
+			if humanoid and humanoid.Health > 0 and aimPart then
+				if humanoid.Health >= minHealth or not healthCheck then
+					local headPos = camera:WorldToViewportPoint(aimPart.Position)
+					local screenPos = Vector2.new(headPos.X, headPos.Y)
+					local mousePos = Vector2.new(mouse.X, mouse.Y)
+					local cursorDistance = (screenPos - mousePos).Magnitude
+					local playerDistance = (aimPart.Position - cameraPos).Magnitude
+					if cursorDistance < shortestCursorDistance and headPos.Z > 0 then
+						if (not wallCheck) or (not checkWall(character)) then
+							if playerDistance < shortestPlayerDistance then
+								shortestPlayerDistance = playerDistance
+								shortestCursorDistance = cursorDistance
+								nearestPlayer = {Character = character}
+							end
+						end
+					end
+				end
+			end
+		end
+	end
     return nearestPlayer
 end
 
 local function predict(player)
-    if player and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
-        local head = player.Character.Head
-        local hrp = player.Character.HumanoidRootPart
+    if player and player.Character then
+        local aimPart = getAimPart(player.Character)
+        local hrp = getRootPart(player.Character)
+        if not aimPart or not hrp then return nil end
         local velocity = hrp.Velocity
-        local predictedPosition = head.Position + (velocity * predictionStrength)
+        local predictedPosition = aimPart.Position + (velocity * predictionStrength)
         return predictedPosition
     end
     return nil
@@ -218,17 +353,18 @@ local function newDrawing(dtype, props)
     return d
 end
 
-local function espIsTeammate(player)
+local function espIsTeammate(target)
     if not espTeamCheck then return false end
-    return player.Team == plr.Team
+	local _, p = resolveCharacter(target)
+	return p ~= nil and p.Team == plr.Team
 end
 
 local function espCheckWall(character)
     if not espVisCheck then return true end
-    local head = character:FindFirstChild("Head")
-    if not head then return false end
+    local part = getAimPart(character)
+    if not part then return false end
     local origin = camera.CFrame.Position
-    local dir = head.Position - origin
+    local dir = part.Position - origin
     local params = RaycastParams.new()
     local ignore = {character, workspace.CurrentCamera}
     if plr.Character then table.insert(ignore, plr.Character) end
@@ -259,7 +395,7 @@ local function getHealthColor(h, max)
     return Color3.fromRGB(math.floor((1 - r) * 255), math.floor(r * 255), 0)
 end
 
-local function createESP(player)
+createESP = function(target)
     local obj = {}
     if QUAD_SUPPORTED then
         obj.box        = newDrawing("Quad", {Visible=false, Color=espBoxColor, Thickness=1, Filled=false})
@@ -277,14 +413,14 @@ local function createESP(player)
     obj.tracerOut   = newDrawing("Line",   {Visible=false, Color=Color3.fromRGB(0,0,0), Thickness=3})
     obj.tracer      = newDrawing("Line",   {Visible=false, Color=espTracerColor, Thickness=1})
     obj.headDot     = newDrawing("Circle", {Visible=false, Filled=true, NumSides=20, Radius=4, Color=espBoxColor})
-    ESPData[player] = obj
+    ESPData[target] = obj
 end
 
-local function removeESP(player)
-    local obj = ESPData[player]
+removeESP = function(target)
+    local obj = ESPData[target]
     if not obj then return end
     for _, d in pairs(obj) do pcall(function() d.Visible=false d:Remove() end) end
-    ESPData[player] = nil
+    ESPData[target] = nil
 end
 
 local function hideESPObj(obj)
@@ -317,25 +453,29 @@ local function drawBox(obj, tl, tr, bl, br, color)
 end
 
 local function updateESP(player, obj)
-    local character = player.Character
+    local character, p = resolveCharacter(player)
     if not character then hideESPObj(obj) return end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local hrp = getRootPart(character)
     local head = character:FindFirstChild("Head")
-    if not humanoid or not hrp or not head or humanoid.Health <= 0 then hideESPObj(obj) return end
+    local aimPart = getAimPart(character)
+    if not humanoid or not hrp or not aimPart or humanoid.Health <= 0 then hideESPObj(obj) return end
     local dist = (hrp.Position - camera.CFrame.Position).Magnitude
     if dist > espMaxDist then hideESPObj(obj) return end
     if espVisCheck and not espCheckWall(character) then hideESPObj(obj) return end
-    local headScreen = camera:WorldToViewportPoint(head.Position)
+    local headScreen = camera:WorldToViewportPoint(aimPart.Position)
     if headScreen.Z < 0 then hideESPObj(obj) return end
 
     local color = espIsTeammate(player) and espTeamColor or espBoxColor
-    local scale = head.Size.Y / 2
+    local scale = (head and head.Size.Y or 2) / 2
     local hrpCF = hrp.CFrame
     pcall(function() hrpCF = hrp:GetRenderCFrame() end)
-    local topPos = camera:WorldToViewportPoint((hrpCF * CFrame.new(0, head.Size.Y + hrp.Size.Y + 0.1, 0)).Position)
+    local headSizeY = head and head.Size.Y or 2
+    local topPos = camera:WorldToViewportPoint((hrpCF * CFrame.new(0, headSizeY + hrp.Size.Y + 0.1, 0)).Position)
     local botPos = camera:WorldToViewportPoint((hrpCF * CFrame.new(0, -hrp.Size.Y, 0)).Position)
+    if topPos.Z <= 0 or botPos.Z <= 0 then hideESPObj(obj) return end
     local height = math.abs(topPos.Y - botPos.Y)
+    if height ~= height or height <= 1 or height > (camera.ViewportSize.Y * 5) then hideESPObj(obj) return end
     local width  = height * 0.55
     local cx     = headScreen.X
     local top    = topPos.Y
@@ -352,7 +492,11 @@ local function updateESP(player, obj)
 
     -- Name
     if espNames then
-        obj.name.Text = player.DisplayName
+        local name = character.Name
+        if p then
+            name = p.DisplayName
+        end
+        obj.name.Text = name
         obj.name.Position = Vector2.new(cx, top - 16)
         obj.name.Color = espNameColor
         obj.name.Size = espTextSize
@@ -394,8 +538,9 @@ local function updateESP(player, obj)
 
     -- Head dot
     if espHeadDot then
-        local topH = camera:WorldToViewportPoint((head.CFrame * CFrame.new(0, scale, 0)).Position)
-        local botH = camera:WorldToViewportPoint((head.CFrame * CFrame.new(0, -scale, 0)).Position)
+        local dotPart = head or aimPart
+        local topH = camera:WorldToViewportPoint((dotPart.CFrame * CFrame.new(0, scale, 0)).Position)
+        local botH = camera:WorldToViewportPoint((dotPart.CFrame * CFrame.new(0, -scale, 0)).Position)
         obj.headDot.Radius = math.abs((Vector2.new(topH.X,topH.Y) - Vector2.new(botH.X,botH.Y)).Magnitude)
         obj.headDot.Position = Vector2.new(headScreen.X, headScreen.Y)
         obj.headDot.Color = color obj.headDot.Visible = true
@@ -422,6 +567,7 @@ players.PlayerRemoving:Connect(onPlayerRemoving)
 --> [< Render Loop >] <--
 
 RunService.RenderStepped:Connect(function()
+    ensureNPCScan()
     -- FOV circle
     fovCircle.Position = Vector2.new(mouse.X, mouse.Y + 50)
     if rainbowFov then
@@ -437,11 +583,11 @@ RunService.RenderStepped:Connect(function()
         if aiming then
             if stickyAimEnabled and currentTarget then
                 local character = currentTarget.Character
-                local head = character and character:FindFirstChild("Head")
-                if not character or not head then
+                local aimPart = character and getAimPart(character)
+                if not character or not aimPart then
                     currentTarget = nil
                 else
-                    local headPos = camera:WorldToViewportPoint(head.Position)
+                    local headPos = camera:WorldToViewportPoint(aimPart.Position)
                     local screenPos = Vector2.new(headPos.X, headPos.Y)
                     local cursorDistance = (screenPos - Vector2.new(mouse.X, mouse.Y)).Magnitude
                     if cursorDistance > aimFov or (wallCheck and checkWall(character)) or checkTeam(currentTarget) then
@@ -463,16 +609,12 @@ RunService.RenderStepped:Connect(function()
         for _, obj in pairs(ESPData) do hideESPObj(obj) end
     else
         for player, obj in pairs(ESPData) do
-            pcall(updateESP, player, obj)
+            local ok = pcall(updateESP, player, obj)
+            if not ok then
+                hideESPObj(obj)
+            end
         end
     end
-end)
-
-mouse.Button2Down:Connect(function()
-    if aimbotEnabled then aiming = true end
-end)
-mouse.Button2Up:Connect(function()
-    if aimbotEnabled then aiming = false end
 end)
 
 --> [< Aimbot UI >] <--
@@ -484,6 +626,10 @@ local aimbotToggle = Aimbot:Toggle({
     Callback = function(Value)
         aimbotEnabled = Value
         fovCircle.Visible = Value and showFovCircle
+		if not Value then
+			aiming = false
+			currentTarget = nil
+		end
     end
 })
 
@@ -512,6 +658,11 @@ Aimbot:Divider({Text = "Filters", Side = "Left"})
 local wallCheckToggle = Aimbot:Toggle({
     Name = "Wall Check", Side = "Left", Value = true,
     Callback = function(Value) wallCheck = Value end
+})
+
+Aimbot:Toggle({
+	Name = "Include NPCs/Bots", Side = "Left", Value = false,
+	Callback = function(Value) aimbotIncludeNPCs = Value end
 })
 
 Aimbot:Toggle({
@@ -609,6 +760,23 @@ ESP:Toggle({
     Callback = function(Value) espVisCheck = Value end
 })
 
+ESP:Divider({Text = "Targets", Side = "Left"})
+
+ESP:Toggle({
+	Name = "Include NPCs/Bots", Side = "Left", Value = false,
+	Callback = function(Value) espIncludeNPCs = Value end
+})
+
+ESP:Slider({
+	Name = "NPC Scan Interval", Side = "Left", Min = 0.2, Max = 5, Value = 1, Precise = 1, Unit = "s",
+	Callback = function(Value) npcScanInterval = Value end
+})
+
+ESP:Slider({
+	Name = "Max NPC Targets", Side = "Left", Min = 1, Max = 200, Value = 60, Precise = 0, Unit = "",
+	Callback = function(Value) npcMaxTargets = Value end
+})
+
 ESP:Slider({
     Name = "Max Distance", Side = "Left", Min = 100, Max = 5000, Value = 1000, Precise = 0, Unit = "",
     Callback = function(Value) espMaxDist = Value end
@@ -652,7 +820,7 @@ ESP:Colorpicker({
 Keybinds:Divider({Text = "Menu", Side = "Left"})
 
 Keybinds:Keybind({
-	Name = "Toggle GUI", Side = "Left", Key = "RightControl", Mouse = false,
+	Name = "Toggle GUI", Side = "Left", Value = "RightControl", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if pressed then
@@ -662,10 +830,25 @@ Keybinds:Keybind({
 	end
 })
 
+Keybinds:Divider({Text = "Aimbot Activation", Side = "Left"})
+
+Keybinds:Keybind({
+	Name = "Aimbot Hold", Side = "Left", Value = "MouseButton2", Mouse = true,
+	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
+	Callback = function(_, pressed)
+		if UserInputService:GetFocusedTextBox() then return end
+		if not aimbotEnabled then
+			aiming = false
+			return
+		end
+		aiming = pressed and true or false
+	end
+})
+
 Keybinds:Divider({Text = "Toggles", Side = "Left"})
 
 Keybinds:Keybind({
-	Name = "Toggle Aimbot", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "Toggle Aimbot", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if pressed and aimbotToggle then
@@ -676,7 +859,7 @@ Keybinds:Keybind({
 })
 
 Keybinds:Keybind({
-	Name = "Toggle ESP", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "Toggle ESP", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if pressed and espToggle then
@@ -687,7 +870,7 @@ Keybinds:Keybind({
 })
 
 Keybinds:Keybind({
-	Name = "Toggle Wall Check", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "Toggle Wall Check", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if pressed and wallCheckToggle then
@@ -698,7 +881,7 @@ Keybinds:Keybind({
 })
 
 Keybinds:Keybind({
-	Name = "Toggle FOV Circle", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "Toggle FOV Circle", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if pressed then
@@ -717,7 +900,7 @@ Keybinds:Slider({
 })
 
 Keybinds:Keybind({
-	Name = "FOV +", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "FOV +", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if not pressed then return end
@@ -733,7 +916,7 @@ Keybinds:Keybind({
 })
 
 Keybinds:Keybind({
-	Name = "FOV -", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "FOV -", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if not pressed then return end
@@ -751,11 +934,13 @@ Keybinds:Keybind({
 Keybinds:Divider({Text = "Safety", Side = "Left"})
 
 Keybinds:Keybind({
-	Name = "Panic (Disable All + Hide GUI)", Side = "Left", Key = "NONE", Mouse = false,
+	Name = "Panic (Disable All + Hide GUI)", Side = "Left", Value = "NONE", Mouse = false,
 	Blacklist = {"W","A","S","D","Slash","Tab","Backspace","Escape","Space","Delete","Unknown","Backquote"},
 	Callback = function(_, pressed)
 		if not pressed then return end
 		if UserInputService:GetFocusedTextBox() then return end
+		aiming = false
+		currentTarget = nil
 		if aimbotToggle then aimbotToggle:SetValue(false) end
 		if espToggle then espToggle:SetValue(false) end
 		showFovCircle = false
