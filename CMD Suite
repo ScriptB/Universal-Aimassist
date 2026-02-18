@@ -289,6 +289,60 @@ local function stopLoopBring()
 	return "Loop bring stopped"
 end
 
+local loopFlingConn=nil
+local loopFlingTarget=""
+local function startLoopFling(name)
+	if loopFlingConn then loopFlingConn:Disconnect() end
+	loopFlingTarget=name
+	loopFlingConn=RunService.Heartbeat:Connect(function()
+		if isAll(loopFlingTarget) then
+			for _,p in ipairs(getOthers()) do
+				local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+				if tc then
+					local bv=Instance.new("BodyVelocity")
+					bv.Velocity=Vector3.new(math.random(-500,500),800,math.random(-500,500))
+					bv.MaxForce=Vector3.new(9e9,9e9,9e9); bv.Parent=tc
+					game:GetService("Debris"):AddItem(bv,0.15)
+				end
+			end
+		else
+			local p=findPlayer(loopFlingTarget); if not p then return end
+			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if tc then
+				local bv=Instance.new("BodyVelocity")
+				bv.Velocity=Vector3.new(math.random(-500,500),800,math.random(-500,500))
+				bv.MaxForce=Vector3.new(9e9,9e9,9e9); bv.Parent=tc
+				game:GetService("Debris"):AddItem(bv,0.15)
+			end
+		end
+	end)
+	return "Loop flinging "..(isAll(name) and "everyone" or name)
+end
+local function stopLoopFling()
+	if loopFlingConn then loopFlingConn:Disconnect(); loopFlingConn=nil end
+	loopFlingTarget=""
+	return "Loop fling stopped"
+end
+
+local loopTpConn=nil
+local loopTpTarget=""
+local function startLoopTp(name)
+	if loopTpConn then loopTpConn:Disconnect() end
+	loopTpTarget=name
+	loopTpConn=RunService.Heartbeat:Connect(function()
+		local r=getRoot(); if not r then return end
+		local p=findPlayer(loopTpTarget); if not p then return end
+		local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+		if tc then r.CFrame=tc.CFrame+Vector3.new(0,4,0) end
+	end)
+	return "Loop TP → "..name
+end
+local function stopLoopTp()
+	if loopTpConn then loopTpConn:Disconnect(); loopTpConn=nil end
+	loopTpTarget=""
+	return "Loop TP stopped"
+end
+
 local antiAfkConn=nil
 local function startAntiAfk()
 	if antiAfkConn then return "Already active" end
@@ -448,6 +502,14 @@ local TABS = {
 				run=startLoopBring},
 			{name="Stop LB",     icon="⏹",  kind="action",
 				run=stopLoopBring},
+			{name="Loop Fling...",icon="🌀", kind="input",  hint="Player name or 'all'",
+				run=startLoopFling},
+			{name="Stop LF",     icon="🚫", kind="action",
+				run=stopLoopFling},
+			{name="Loop TP...",  icon="📡", kind="input",  hint="Player name",
+				run=startLoopTp},
+			{name="Stop LT",     icon="⛔", kind="action",
+				run=stopLoopTp},
 			{name="Kick...",     icon="🥾", kind="input",  hint="Player name or 'all'",
 				run=kickPlayer},
 			{name="List Players",icon="📋", kind="action",
