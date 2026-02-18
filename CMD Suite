@@ -1,5 +1,5 @@
 --[[
-	Phantom Command Bar  v1.0
+	Phantom Command Bar  v1.1
 	Bottom-anchored strip, hover to rise, scroll + click to run commands.
 	No external library dependency.
 ]]
@@ -129,7 +129,29 @@ local function findPlayer(name)
 	end
 end
 
+local function isAll(name)
+	return name:lower():gsub("%s","") == "all"
+end
+
+local function getOthers()
+	local t={}
+	for _,p in ipairs(Players:GetPlayers()) do
+		if p~=plr then t[#t+1]=p end
+	end
+	return t
+end
+
 local function tpToPlayer(name)
+	if isAll(name) then
+		-- TP self to each player in sequence (last one sticks)
+		local r=getRoot(); if not r then return "No character" end
+		local count=0
+		for _,p in ipairs(getOthers()) do
+			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if tc then r.CFrame=tc.CFrame+Vector3.new(0,4,0); count+=1; task.wait(0.1) end
+		end
+		return "TP'd through "..count.." players"
+	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	local r=getRoot(); local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 	if r and tc then r.CFrame=tc.CFrame+Vector3.new(0,4,0); return "TP'd → "..p.Name end
@@ -137,6 +159,18 @@ local function tpToPlayer(name)
 end
 
 local function bringPlayer(name)
+	if isAll(name) then
+		local r=getRoot(); if not r then return "No character" end
+		local count=0
+		for i,p in ipairs(getOthers()) do
+			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if tc then
+				local offset=Vector3.new((i-1)*4,0,0)
+				tc.CFrame=r.CFrame+offset; count+=1
+			end
+		end
+		return "Brought "..count.." players"
+	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	local r=getRoot(); local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 	if r and tc then tc.CFrame=r.CFrame+Vector3.new(3,0,0); return "Brought "..p.Name end
@@ -152,13 +186,21 @@ local function tpToCoords(input)
 end
 
 local function kickPlayer(name)
+	if isAll(name) then
+		local count=0
+		for _,p in ipairs(getOthers()) do
+			pcall(function() p:Kick("Kicked by Phantom CMD") end)
+			count+=1
+		end
+		return "Kicked "..count.." players"
+	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	pcall(function() p:Kick("Kicked by Phantom CMD") end)
 	return "Kicked "..p.Name
 end
 
 local function chatMsg(msg)
-	local ok,err=pcall(function()
+	local ok=pcall(function()
 		local rs=game:GetService("ReplicatedStorage")
 		local ev=rs:FindFirstChild("DefaultChatSystemChatEvents") and
 				 rs.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
@@ -168,6 +210,20 @@ local function chatMsg(msg)
 end
 
 local function flingPlayer(name)
+	if isAll(name) then
+		local count=0
+		for _,p in ipairs(getOthers()) do
+			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if tc then
+				local bv=Instance.new("BodyVelocity")
+				bv.Velocity=Vector3.new(math.random(-500,500),800,math.random(-500,500))
+				bv.MaxForce=Vector3.new(9e9,9e9,9e9); bv.Parent=tc
+				game:GetService("Debris"):AddItem(bv,0.15)
+				count+=1
+			end
+		end
+		return "Flung "..count.." players"
+	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 	if not tc then return "Character not loaded" end
@@ -179,17 +235,27 @@ local function flingPlayer(name)
 end
 
 local loopKillConn=nil
+local loopKillTarget="" -- "all" or player name
 local function startLoopKill(name)
 	if loopKillConn then loopKillConn:Disconnect() end
+	loopKillTarget=name
 	loopKillConn=RunService.Heartbeat:Connect(function()
-		local p=findPlayer(name); if not p then return end
-		local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-		if h then h.Health=0 end
+		if isAll(loopKillTarget) then
+			for _,p in ipairs(getOthers()) do
+				local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+				if h then h.Health=0 end
+			end
+		else
+			local p=findPlayer(loopKillTarget); if not p then return end
+			local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+			if h then h.Health=0 end
+		end
 	end)
-	return "Loop killing "..name
+	return "Loop killing "..(isAll(name) and "everyone" or name)
 end
 local function stopLoopKill()
 	if loopKillConn then loopKillConn:Disconnect(); loopKillConn=nil end
+	loopKillTarget=""
 	return "Loop kill stopped"
 end
 
@@ -331,17 +397,17 @@ local TABS = {
 	{
 		name="Others", icon="👥",
 		cmds={
-			{name="TP to...",    icon="🎯", kind="input",  hint="Player name",
+			{name="TP to...",    icon="🎯", kind="input",  hint="Player name or 'all'",
 				run=tpToPlayer},
-			{name="Bring...",    icon="📌", kind="input",  hint="Player name",
+			{name="Bring...",    icon="📌", kind="input",  hint="Player name or 'all'",
 				run=bringPlayer},
-			{name="Fling...",    icon="💥", kind="input",  hint="Player name",
+			{name="Fling...",    icon="💥", kind="input",  hint="Player name or 'all'",
 				run=flingPlayer},
-			{name="Loop Kill...",icon="☠",  kind="input",  hint="Player name",
+			{name="Loop Kill...",icon="☠",  kind="input",  hint="Player name or 'all'",
 				run=startLoopKill},
 			{name="Stop LK",     icon="🛑", kind="action",
 				run=stopLoopKill},
-			{name="Kick...",     icon="🥾", kind="input",  hint="Player name",
+			{name="Kick...",     icon="🥾", kind="input",  hint="Player name or 'all'",
 				run=kickPlayer},
 			{name="List Players",icon="📋", kind="action",
 				run=printPlayers},
