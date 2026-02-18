@@ -213,24 +213,77 @@ local function chatMsg(msg)
 	return ok and "Said: "..msg or "Chat unavailable"
 end
 
+local FPDH = workspace.FallenPartsDestroyHeight
 local function spinFlingAt(targetRoot)
+	local char=getChar(); if not char then return end
+	local h=getHum(); if not h then return end
 	local r=getRoot(); if not r or not targetRoot then return end
-	local h=getHum()
-	-- TP our character into the target
-	r.CFrame=targetRoot.CFrame+Vector3.new(0,1,0)
-	if h then h.PlatformStand=true end
-	-- Spin our character — collides with target's parts and launches them
-	local bav=Instance.new("BodyAngularVelocity")
-	bav.AngularVelocity=Vector3.new(0,4000,0)
-	bav.MaxTorque=Vector3.new(9e9,9e9,9e9)
-	bav.P=9e9; bav.Parent=r
+
+	-- Save position before fling
+	local oldPos = r.CFrame
+
+	-- Prevent void death during fling
+	workspace.FallenPartsDestroyHeight = 0/0
+
+	-- Lock us in place with a BodyVelocity
 	local bv=Instance.new("BodyVelocity")
-	bv.Velocity=Vector3.new(0,50,0)
+	bv.Velocity=Vector3.new(0,0,0)
 	bv.MaxForce=Vector3.new(9e9,9e9,9e9)
-	bv.P=9e9; bv.Parent=r
-	task.wait(0.5)
-	bav:Destroy(); bv:Destroy()
-	if h then h.PlatformStand=false end
+	bv.Parent=r
+
+	h:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+
+	-- FPos: set our CFrame relative to target and apply massive velocity
+	local function FPos(basePart, offset, angles)
+		r.CFrame = CFrame.new(basePart.Position) * offset * angles
+		char:SetPrimaryPartCFrame(CFrame.new(basePart.Position) * offset * angles)
+		r.Velocity = Vector3.new(9e7, 9e7*10, 9e7)
+		r.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+	end
+
+	-- Oscillate above/below target for 2 seconds
+	local startTime = tick()
+	local angle = 0
+	local tHum = targetRoot.Parent and targetRoot.Parent:FindFirstChildOfClass("Humanoid")
+	repeat
+		if tHum and targetRoot then
+			if targetRoot.Velocity.Magnitude < 50 then
+				angle = angle + 100
+				FPos(targetRoot, CFrame.new(0,1.5,0)+(tHum.MoveDirection*targetRoot.Velocity.Magnitude/1.25), CFrame.Angles(math.rad(angle),0,0))
+				task.wait()
+				FPos(targetRoot, CFrame.new(0,-1.5,0)+(tHum.MoveDirection*targetRoot.Velocity.Magnitude/1.25), CFrame.Angles(math.rad(angle),0,0))
+				task.wait()
+			else
+				FPos(targetRoot, CFrame.new(0,1.5,tHum.WalkSpeed), CFrame.Angles(math.rad(90),0,0))
+				task.wait()
+				FPos(targetRoot, CFrame.new(0,-1.5,-tHum.WalkSpeed), CFrame.Angles(0,0,0))
+				task.wait()
+				FPos(targetRoot, CFrame.new(0,-1.5,0), CFrame.Angles(math.rad(90),0,0))
+				task.wait()
+				FPos(targetRoot, CFrame.new(0,-1.5,0), CFrame.Angles(0,0,0))
+				task.wait()
+			end
+		end
+	until tick() > startTime + 2
+
+	bv:Destroy()
+	h:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+	workspace.CurrentCamera.CameraSubject = h
+
+	-- Return to saved position
+	repeat
+		r.CFrame = oldPos * CFrame.new(0, 0.5, 0)
+		char:SetPrimaryPartCFrame(oldPos * CFrame.new(0, 0.5, 0))
+		h:ChangeState(Enum.HumanoidStateType.GettingUp)
+		for _,p in ipairs(char:GetChildren()) do
+			if p:IsA("BasePart") then
+				p.Velocity=Vector3.new(); p.RotVelocity=Vector3.new()
+			end
+		end
+		task.wait()
+	until (r.Position - oldPos.Position).Magnitude < 25
+
+	workspace.FallenPartsDestroyHeight = FPDH
 end
 
 local function flingPlayer(name)
