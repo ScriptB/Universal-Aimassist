@@ -214,42 +214,35 @@ local function chatMsg(msg)
 end
 
 local function spinFlingAt(targetRoot)
-	local r=getRoot(); if not r or not targetRoot then return end
-	local h=getHum()
-	-- TP on top of target
-	r.CFrame=targetRoot.CFrame+Vector3.new(0,3,0)
-	-- Spin our character violently
+	if not targetRoot then return end
+	-- Apply spin + velocity directly to the target (IY-style)
 	local bav=Instance.new("BodyAngularVelocity")
-	bav.AngularVelocity=Vector3.new(0,800,0)
+	bav.AngularVelocity=Vector3.new(0,math.random(500,1000),0)
 	bav.MaxTorque=Vector3.new(0,9e9,0)
-	bav.P=9e9; bav.Parent=r
+	bav.P=9e4; bav.Parent=targetRoot
 	local bv=Instance.new("BodyVelocity")
-	bv.Velocity=Vector3.new(math.random(-200,200),50,math.random(-200,200))
+	bv.Velocity=Vector3.new(math.random(-200,200),math.random(50,200),math.random(-200,200))
 	bv.MaxForce=Vector3.new(9e9,9e9,9e9)
-	bv.P=9e9; bv.Parent=r
-	if h then h.PlatformStand=true end
-	task.wait(0.3)
-	bav:Destroy(); bv:Destroy()
-	if h then h.PlatformStand=false end
+	bv.P=9e4; bv.Parent=targetRoot
+	game:GetService("Debris"):AddItem(bav,0.2)
+	game:GetService("Debris"):AddItem(bv,0.2)
 end
 
 local function flingPlayer(name)
 	if isAll(name) then
 		local others=getOthers()
 		if #others==0 then return "No other players" end
-		task.spawn(function()
-			for _,p in ipairs(others) do
-				local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-				if tc then spinFlingAt(tc) end
-				task.wait(2)
-			end
-		end)
-		return "Flinging "..#others.." players..."
+		local count=0
+		for _,p in ipairs(others) do
+			local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if tc then spinFlingAt(tc); count+=1 end
+		end
+		return "Flung "..count.." players"
 	end
 	local p=findPlayer(name); if not p then return "Player not found" end
 	local tc=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 	if not tc then return "Character not loaded" end
-	task.spawn(function() spinFlingAt(tc) end)
+	spinFlingAt(tc)
 	return "Flung "..p.Name
 end
 
