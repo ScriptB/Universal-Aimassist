@@ -182,10 +182,366 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 -- ===================================
+-- EMBEDDED SCRIPTS (NO EXTERNAL LOADSTRINGS)
+-- ===================================
+
+-- Embedded UNCTest Script
+local UNCTestScript = [[
+local passes, fails, undefined = 0, 0, 0
+local running = 0
+
+local function getGlobal(path)
+	local value = getfenv(0)
+
+	while value ~= nil and path ~= "" do
+		local name, nextValue = string.match(path, "^([^.]+)%.?(.*)$")
+		value = value[name]
+		path = nextValue
+	end
+
+	return value
+end
+
+local function test(name, aliases, callback)
+	running += 1
+
+	task.spawn(function()
+		if not callback then
+			print("⏺️ " .. name)
+		elseif not getGlobal(name) then
+			fails += 1
+			warn("⛔ " .. name)
+		else
+			local success, message = pcall(callback)
+	
+			if success then
+				passes += 1
+				print("✅ " .. name .. (message and " • " .. message or ""))
+			else
+				fails += 1
+				warn("⛔ " .. name .. " failed: " .. message)
+			end
+		end
+	
+		local undefinedAliases = {}
+	
+		for _, alias in ipairs(aliases) do
+			if getGlobal(alias) == nil then
+				table.insert(undefinedAliases, alias)
+			end
+		end
+	
+		if #undefinedAliases > 0 then
+			undefined += 1
+			warn("⚠️ " .. table.concat(undefinedAliases, ", "))
+		end
+
+		running -= 1
+	end)
+end
+
+-- UNC Environment Check
+print("UNC Environment Check")
+
+-- Test UNC functions
+test("getrawmetatable", {"getrawmetatable"}, function()
+	local mt = getrawmetatable(game)
+	return mt and type(mt) == "table"
+end)
+
+test("setrawmetatable", {"setrawmetatable"}, function()
+	local mt = getrawmetatable(game)
+	if mt then
+		setrawmetatable(game, mt)
+		return true
+	end
+	return false
+end)
+
+test("getgc", {"getgc"}, function()
+	local objects = getgc()
+	return type(objects) == "table" and #objects > 0
+end)
+
+test("getinstances", {"getinstances"}, function()
+	local instances = getinstances()
+	return type(instances) == "table" and #instances > 0
+end)
+
+test("isfile", {"isfile"}, function()
+	return type(isfile) == "function"
+end)
+
+test("delfile", {"delfile"}, function()
+	return type(delfile) == "function"
+end)
+
+test("readfile", {"readfile"}, function()
+	return type(readfile) == "function"
+end)
+
+test("writefile", {"writefile"}, function()
+	return type(writefile) == "function"
+end)
+
+test("loadfile", {"loadfile"}, function()
+	return type(loadfile) == "function"
+end)
+
+test("makefolder", {"makefolder"}, function()
+	return type(makefolder) == "function"
+end)
+
+test("listfiles", {"listfiles"}, function()
+	return type(listfiles) == "function"
+end)
+
+test("isfolder", {"isfolder"}, function()
+	return type(isfolder) == "function"
+end)
+
+-- Wait for all tests to complete
+while running > 0 do
+	wait()
+end
+
+-- Calculate UNC percentage
+local total = passes + fails + undefined
+local uncPercentage = total > 0 and math.round((passes / total) * 100) or 0
+
+-- Return results
+return {
+	UNC = uncPercentage,
+	Passes = passes,
+	Fails = fails,
+	Undefined = undefined,
+	Total = total,
+	Status = "Complete"
+}
+]]
+
+-- Embedded Validator and Executor Check Script
+local ValidatorScript = [[
+--[[
+    Improved Executor Vulnerability Check
+    Enhanced version with better structure, error handling, and features
+    
+    Features:
+    - Clean, organized code structure
+    - Better error handling and logging
+    - Progress indicators
+    - Detailed reporting
+    - Export functionality
+    - Performance improvements
+    - Better mobile compatibility
+]]
+
+-- ===================================
+-- CONFIGURATION AND UTILITIES
+-- ===================================
+
+local ExecutorTest = {
+    Version = "2.0",
+    Author = "ScriptB",
+    StartTime = tick(),
+    
+    -- Test configuration
+    Config = {
+        ShowProgress = true,
+        DetailedLogging = true,
+        ExportResults = true,
+        TestTimeout = 5,
+        ParallelTesting = true
+    },
+    
+    -- Results tracking
+    Results = {
+        Pass = 0,
+        Fail = 0,
+        Unknown = 0,
+        Total = 0,
+        Details = {},
+        StartTime = tick()
+    },
+    
+    -- Blocked functions tracking
+    BlockedFunctions = {},
+    
+    -- Service categories for organization
+    Categories = {
+        "HttpRbxApiService",
+        "ScriptContext", 
+        "BrowserService",
+        "ContextActionService",
+        "Workspace",
+        "Lighting",
+        "ReplicatedFirst",
+        "ReplicatedStorage",
+        "Players",
+        "StarterGui",
+        "StarterPack",
+        "StarterPlayer",
+        "Teams",
+        "SoundService",
+        "ChatService",
+        "LocalizationService",
+        "TestService"
+    }
+}
+
+-- ===================================
+-- CORE TESTING FUNCTIONS
+-- ===================================
+
+local function testFunction(name, category, testFunc, aliases)
+    ExecutorTest.Results.Total = ExecutorTest.Results.Total + 1
+    
+    local function runTest()
+        local success, result = pcall(testFunc)
+        
+        if success then
+            ExecutorTest.Results.Pass = ExecutorTest.Results.Pass + 1
+            if ExecutorTest.Config.DetailedLogging then
+                print("✅ " .. name .. " - " .. tostring(result))
+            end
+        else
+            ExecutorTest.Results.Fail = ExecutorTest.Results.Fail + 1
+            ExecutorTest.BlockedFunctions[name] = true
+            if ExecutorTest.Config.DetailedLogging then
+                warn("⛔ " .. name .. " - " .. tostring(result))
+            end
+        end
+        
+        ExecutorTest.Results.Details[name] = {
+            Success = success,
+            Result = result,
+            Category = category,
+            Aliases = aliases or {}
+        }
+    end
+    
+    if ExecutorTest.Config.ParallelTesting then
+        task.spawn(runTest)
+    else
+        runTest()
+    end
+end
+
+-- ===================================
+-- SPECIFIC TESTS
+-- ===================================
+
+-- Test HTTP services
+testFunction("HttpGet", "HttpRbxApiService", function()
+    return type(game.HttpGet) == "function"
+end, {"httpget", "http_request"})
+
+testFunction("HttpService", "HttpRbxApiService", function()
+    local service = game:GetService("HttpService")
+    return service ~= nil
+end, {"httpservice"})
+
+-- Test script execution
+testFunction("Loadstring", "ScriptContext", function()
+    local testScript = "return true"
+    local func = loadstring(testScript)
+    return func ~= nil and func() == true
+end, {"loadstring", "execute"})
+
+testFunction("ExecuteScript", "ScriptContext", function()
+    return type(game.ExecuteScript) == "function"
+end, {"executescript", "runscript"})
+
+-- Test memory functions
+testFunction("GetRawMetatable", "ScriptContext", function()
+    local mt = getrawmetatable(game)
+    return mt ~= nil and type(mt) == "table"
+end, {"getrawmetatable", "getmt"})
+
+testFunction("SetRawMetatable", "ScriptContext", function()
+    local mt = getrawmetatable(game)
+    if mt then
+        setrawmetatable(game, mt)
+        return true
+    end
+    return false
+end, {"setrawmetatable", "setmt"})
+
+-- Test file system
+testFunction("IsFile", "ScriptContext", function()
+    return type(isfile) == "function"
+end, {"isfile"})
+
+testFunction("ReadFile", "ScriptContext", function()
+    return type(readfile) == "function"
+end, {"readfile"})
+
+testFunction("WriteFile", "ScriptContext", function()
+    return type(writefile) == "function"
+end, {"writefile"})
+
+-- Test UNC functions
+testFunction("GetGC", "ScriptContext", function()
+    local objects = getgc()
+    return objects ~= nil and type(objects) == "table"
+end, {"getgc"})
+
+testFunction("GetInstances", "ScriptContext", function()
+    local instances = getinstances()
+    return instances ~= nil and type(instances) == "table"
+end, {"getinstances"})
+
+-- Test executor identification
+testFunction("IdentifyExecutor", "ScriptContext", function()
+    return type(identifyexecutor) == "function"
+end, {"identifyexecutor", "getexecutorname"})
+
+-- Test synapse functions
+testFunction("Syn", "ScriptContext", function()
+    return syn ~= nil and type(syn) == "table"
+end, {"syn"})
+
+-- ===================================
+-- RUN ALL TESTS
+-- ===================================
+
+local function runAllTests()
+    ExecutorTest.Results.StartTime = tick()
+    
+    if ExecutorTest.Config.ShowProgress then
+        print("🔍 Starting Executor Vulnerability Check...")
+    end
+    
+    -- Wait for all tests to complete
+    wait(ExecutorTest.Config.TestTimeout)
+    
+    -- Calculate results
+    ExecutorTest.Results.EndTime = tick()
+    ExecutorTest.Results.Duration = ExecutorTest.Results.EndTime - ExecutorTest.Results.StartTime
+    
+    if ExecutorTest.Config.ShowProgress then
+        print("✅ Test Complete!")
+        print("📊 Results:")
+        print("   Pass: " .. ExecutorTest.Results.Pass)
+        print("   Fail: " .. ExecutorTest.Results.Fail)
+        print("   Unknown: " .. ExecutorTest.Results.Unknown)
+        print("   Total: " .. ExecutorTest.Results.Total)
+        print("   Duration: " .. string.format("%.2f", ExecutorTest.Results.Duration) .. "s")
+    end
+    
+    return ExecutorTest.Results
+end
+
+-- Run tests and return results
+local results = runAllTests()
+return results
+]]
+
+-- ===================================
 -- SILENT UNC AND EXECUTOR DETECTION (BACKGROUND)
 -- ===================================
 
--- Silent detection function using GitHub raw URLs
+-- Silent detection function using embedded scripts
 local function runSilentDetection()
     local results = {
         Executor = "Unknown",
@@ -197,10 +553,10 @@ local function runSilentDetection()
     -- Get executor name first
     results.Executor = identifyexecutor and identifyexecutor() or "Unknown"
     
-    -- Run UNCTest silently via GitHub raw URL
+    -- Run UNCTest silently using embedded script
     spawn(function()
         local success, uncResults = pcall(function()
-            return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/main/Scripts/UNCTest"))()
+            return loadstring(UNCtestScript)()
         end)
         
         if success and uncResults then
@@ -211,10 +567,10 @@ local function runSilentDetection()
         end
     end)
     
-    -- Run Validator silently via GitHub raw URL  
+    -- Run Validator silently using embedded script  
     spawn(function()
         local success, validatorResults = pcall(function()
-            return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/main/Scripts/Validator%20and%20Executor%20Check"))()
+            return loadstring(ValidatorScript)()
         end)
         
         if success and validatorResults then
