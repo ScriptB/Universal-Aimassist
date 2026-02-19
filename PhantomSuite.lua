@@ -1,5 +1,5 @@
 --[[
-	Phantom Suite v7.6 (Embedded UI Solution)
+	Phantom Suite v7.7 (GitHub UI Integration)
 	by Asuneteric
 
 	Precision aimbot and ESP for competitive advantage.
@@ -1114,293 +1114,27 @@ end
 
 -- Function to create main UI
 local function createMainUI(lockedFeatures, safetyIssues)
-	-- Create embedded Orion UI to bypass all external dependencies
-	local OrionLib = {}
+	-- Load Orion UI from GitHub
+	local success, OrionLib = pcall(function()
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/main/Orion-Library/source.lua"))()
+	end)
 	
-	-- Basic Orion-like UI implementation
-	OrionLib.ThemeObjects = {}
-	OrionLib.Connections = {}
-	OrionLib.Flags = {}
-	OrionLib.Elements = {}
-	
-	-- Theme
-	OrionLib.Themes = {
-		Default = {
-			Main = Color3.fromRGB(25, 25, 25),
-			Second = Color3.fromRGB(32, 32, 32),
-			Stroke = Color3.fromRGB(60, 60, 60),
-			Divider = Color3.fromRGB(60, 60, 60),
-			Text = Color3.fromRGB(240, 240, 240),
-			TextDark = Color3.fromRGB(150, 150, 150)
-		}
-	}
-	OrionLib.SelectedTheme = "Default"
-	
-	-- Create main window
-	function OrionLib:MakeWindow(config)
-		local ScreenGui = Instance.new("ScreenGui")
-		ScreenGui.Name = "PhantomSuiteUI"
-		ScreenGui.Parent = game:GetService("CoreGui")
-		ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-		
-		local MainFrame = Instance.new("Frame")
-		MainFrame.Size = UDim2.new(0, 600, 0, 450)
-		MainFrame.Position = UDim2.new(0.5, -300, 0.5, -225)
-		MainFrame.BackgroundColor3 = OrionLib.Themes.Default.Main
-		MainFrame.BorderSizePixel = 2
-		MainFrame.BorderColor3 = Color3.fromRGB(255, 165, 0)
-		MainFrame.Parent = ScreenGui
-		
-		local Corner = Instance.new("UICorner")
-		Corner.CornerRadius = UDim.new(0, 8)
-		Corner.Parent = MainFrame
-		
-		local Title = Instance.new("TextLabel")
-		Title.Size = UDim2.new(1, 0, 0, 40)
-		Title.Position = UDim2.new(0, 0, 0, 10)
-		Title.BackgroundTransparency = 1
-		Title.Text = config.Name or "Phantom Suite v7.6"
-		Title.TextColor3 = Color3.fromRGB(255, 165, 0)
-		Title.TextScaled = true
-		Title.Font = Enum.Font.SourceSansBold
-		Title.Parent = MainFrame
-		
-		-- Tab container
-		local TabContainer = Instance.new("Frame")
-		TabContainer.Size = UDim2.new(1, -20, 0, 40)
-		TabContainer.Position = UDim2.new(0, 10, 0, 60)
-		TabContainer.BackgroundTransparency = 1
-		TabContainer.Parent = MainFrame
-		
-		-- Content area
-		local ContentArea = Instance.new("ScrollingFrame")
-		ContentArea.Size = UDim2.new(1, -20, 1, -120)
-		ContentArea.Position = UDim2.new(0, 10, 0, 110)
-		ContentArea.BackgroundTransparency = 1
-		ContentArea.ScrollBarThickness = 4
-		ContentArea.Parent = MainFrame
-		
-		local UIList = Instance.new("UIListLayout")
-		UIList.SortOrder = Enum.SortOrder.LayoutOrder
-		UIList.Parent = ContentArea
-		
-		local Window = {
-			ScreenGui = ScreenGui,
-			MainFrame = MainFrame,
-			ContentArea = ContentArea,
-			Tabs = {}
-		}
-		
-		function Window:MakeTab(config)
-			local TabButton = Instance.new("TextButton")
-			TabButton.Size = UDim2.new(0, 80, 0, 30)
-			TabButton.Position = UDim2.new(0, #Window.Tabs * 85, 0, 0)
-			TabButton.BackgroundColor3 = OrionLib.Themes.Default.Second
-			TabButton.BorderSizePixel = 1
-			TabButton.BorderColor3 = OrionLib.Themes.Default.Stroke
-			TabButton.Text = config.Name or "Tab"
-			TabButton.TextColor3 = OrionLib.Themes.Default.Text
-			TabButton.Font = Enum.Font.SourceSans
-			TabButton.Parent = TabContainer
-			
-			local TabCorner = Instance.new("UICorner")
-			TabCorner.CornerRadius = UDim.new(0, 4)
-			TabCorner.Parent = TabButton
-			
-			local TabContent = Instance.new("Frame")
-			TabContent.Size = UDim2.new(1, 0, 1, 0)
-			TabContent.BackgroundTransparency = 1
-			TabContent.Visible = (#Window.Tabs == 0)
-			TabContent.Parent = ContentArea
-			
-			local Tab = {
-				Button = TabButton,
-				Content = TabContent,
-				Elements = {}
-			}
-			
-			TabButton.MouseButton1Click:Connect(function()
-				-- Hide all tabs
-				for _, t in pairs(Window.Tabs) do
-					t.Content.Visible = false
-					t.Button.BackgroundColor3 = OrionLib.Themes.Default.Second
-				end
-				-- Show this tab
-				TabContent.Visible = true
-				TabButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-			end)
-			
-			table.insert(Window.Tabs, Tab)
-			
-			function Tab:AddSection(config)
-				local Section = Instance.new("Frame")
-				Section.Size = UDim2.new(1, 0, 0, 30)
-				Section.BackgroundColor3 = OrionLib.Themes.Default.Second
-				Section.BorderSizePixel = 1
-				Section.BorderColor3 = OrionLib.Themes.Default.Stroke
-				Section.Parent = TabContent
-				
-				local SectionLabel = Instance.new("TextLabel")
-				SectionLabel.Size = UDim2.new(1, -10, 1, 0)
-				SectionLabel.Position = UDim2.new(0, 5, 0, 0)
-				SectionLabel.BackgroundTransparency = 1
-				SectionLabel.Text = config.Name or "Section"
-				SectionLabel.TextColor3 = OrionLib.Themes.Default.Text
-				SectionLabel.Font = Enum.Font.SourceSansBold
-				SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-				SectionLabel.Parent = Section
-				
-				local SectionCorner = Instance.new("UICorner")
-				SectionCorner.CornerRadius = UDim.new(0, 4)
-				SectionCorner.Parent = Section
-			end
-			
-			function Tab:AddLabel(text)
-				local Label = Instance.new("TextLabel")
-				Label.Size = UDim2.new(1, 0, 0, 25)
-				Label.BackgroundColor3 = OrionLib.Themes.Default.Main
-				Label.BorderSizePixel = 1
-				Label.BorderColor3 = OrionLib.Themes.Default.Stroke
-				Label.Text = text or ""
-				Label.TextColor3 = OrionLib.Themes.Default.Text
-				Label.Font = Enum.Font.SourceSans
-				Label.TextXAlignment = Enum.TextXAlignment.Left
-				Label.Parent = TabContent
-				
-				local LabelPadding = Instance.new("UIPadding")
-				LabelPadding.PaddingLeft = UDim.new(0, 10)
-				LabelPadding.Parent = Label
-				
-				local LabelCorner = Instance.new("UICorner")
-				LabelCorner.CornerRadius = UDim.new(0, 4)
-				LabelCorner.Parent = Label
-			end
-			
-			function Tab:AddButton(config)
-				local Button = Instance.new("TextButton")
-				Button.Size = UDim2.new(1, 0, 0, 30)
-				Button.BackgroundColor3 = OrionLib.Themes.Default.Second
-				Button.BorderSizePixel = 1
-				Button.BorderColor3 = OrionLib.Themes.Default.Stroke
-				Button.Text = config.Name or "Button"
-				Button.TextColor3 = OrionLib.Themes.Default.Text
-				Button.Font = Enum.Font.SourceSans
-				Button.Parent = TabContent
-				
-				local ButtonCorner = Instance.new("UICorner")
-				ButtonCorner.CornerRadius = UDim.new(0, 4)
-				ButtonCorner.Parent = Button
-				
-				if config.Callback then
-					Button.MouseButton1Click:Connect(config.Callback)
-				end
-			end
-			
-			function Tab:AddToggle(config)
-				local Toggle = Instance.new("Frame")
-				Toggle.Size = UDim2.new(1, 0, 0, 30)
-				Toggle.BackgroundColor3 = OrionLib.Themes.Default.Main
-				Toggle.BorderSizePixel = 1
-				Toggle.BorderColor3 = OrionLib.Themes.Default.Stroke
-				Toggle.Parent = TabContent
-				
-				local ToggleButton = Instance.new("TextButton")
-				ToggleButton.Size = UDim2.new(0, 50, 0, 25)
-				ToggleButton.Position = UDim2.new(1, -60, 0, 2.5)
-				ToggleButton.BackgroundColor3 = config.Default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-				ToggleButton.BorderSizePixel = 0
-				ToggleButton.Text = ""
-				ToggleButton.Parent = Toggle
-				
-				local ToggleCorner = Instance.new("UICorner")
-				ToggleCorner.CornerRadius = UDim.new(0, 4)
-				ToggleCorner.Parent = ToggleButton
-				
-				local ToggleLabel = Instance.new("TextLabel")
-				ToggleLabel.Size = UDim2.new(1, -70, 1, 0)
-				ToggleLabel.Position = UDim2.new(0, 10, 0, 0)
-				ToggleLabel.BackgroundTransparency = 1
-				ToggleLabel.Text = config.Name or "Toggle"
-				ToggleLabel.TextColor3 = OrionLib.Themes.Default.Text
-				ToggleLabel.Font = Enum.Font.SourceSans
-				ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-				ToggleLabel.Parent = Toggle
-				
-				local isEnabled = config.Default or false
-				
-				ToggleButton.MouseButton1Click:Connect(function()
-					isEnabled = not isEnabled
-					ToggleButton.BackgroundColor3 = isEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-					if config.Callback then
-						config.Callback(isEnabled)
-					end
-				end)
-				
-				if config.Flag then
-					OrionLib.Flags[config.Flag] = isEnabled
-				end
-			end
-			
-			return Tab
-		end
-		
-		function OrionLib:MakeNotification(config)
-			local Notification = Instance.new("Frame")
-			Notification.Size = UDim2.new(0, 300, 0, 100)
-			Notification.Position = UDim2.new(1, 320, 1, -120)
-			Notification.BackgroundColor3 = OrionLib.Themes.Default.Main
-			Notification.BorderSizePixel = 2
-			Notification.BorderColor3 = Color3.fromRGB(255, 165, 0)
-			Notification.Parent = ScreenGui
-			
-			local NotificationCorner = Instance.new("UICorner")
-			NotificationCorner.CornerRadius = UDim.new(0, 8)
-			NotificationCorner.Parent = Notification
-			
-			local NotificationTitle = Instance.new("TextLabel")
-			NotificationTitle.Size = UDim2.new(1, -20, 0, 30)
-			NotificationTitle.Position = UDim2.new(0, 10, 0, 10)
-			NotificationTitle.BackgroundTransparency = 1
-			NotificationTitle.Text = config.Name or "Notification"
-			NotificationTitle.TextColor3 = Color3.fromRGB(255, 165, 0)
-			NotificationTitle.Font = Enum.Font.SourceSansBold
-			NotificationTitle.TextXAlignment = Enum.TextXAlignment.Left
-			NotificationTitle.Parent = Notification
-			
-			local NotificationContent = Instance.new("TextLabel")
-			NotificationContent.Size = UDim2.new(1, -20, 0, 50)
-			NotificationContent.Position = UDim2.new(0, 10, 0, 40)
-			NotificationContent.BackgroundTransparency = 1
-			NotificationContent.Text = config.Content or ""
-			NotificationContent.TextColor3 = OrionLib.Themes.Default.Text
-			NotificationContent.Font = Enum.Font.SourceSans
-			NotificationContent.TextXAlignment = Enum.TextXAlignment.Left
-			NotificationContent.TextYAlignment = Enum.TextYAlignment.Top
-			NotificationContent.TextWrapped = true
-			NotificationContent.Parent = Notification
-			
-			-- Auto remove after time
-			game:GetService("Debris"):AddItem(Notification, config.Time or 5)
-		end
-		
-		return Window
+	if not success then
+		warn("Failed to load Orion UI from GitHub: " .. tostring(OrionLib))
+		return createFallbackUI(lockedFeatures, safetyIssues)
 	end
+		-- Initialize Orion UI
+	OrionLib:Init()
 	
-	-- Create embedded Orion window
+	-- Create Orion window
 	local Window = OrionLib:MakeWindow({
-		Name = "Phantom Suite v7.6 - Embedded UI",
+		Name = "Phantom Suite v7.7 - GitHub UI",
 		HidePremium = false,
 		SaveConfig = true,
 		ConfigFolder = "PhantomSuite",
-		IntroEnabled = false,
-		IntroText = "Phantom Suite v7.6 - Embedded UI",
-		Icon = "rbxassetid://4483345998"
+		IntroEnabled = true,
+		IntroText = "Phantom Suite v7.7"
 	})
-	
-	if not Window then
-		warn("Failed to create main window")
-		return createFallbackUI(lockedFeatures, safetyIssues)
-	end
 	
 	-- Create tabs
 	local Status = Window:MakeTab({Name = "Status"})
@@ -1416,29 +1150,8 @@ local function createMainUI(lockedFeatures, safetyIssues)
 		return createFallbackUI(lockedFeatures, safetyIssues)
 	end
 	
-	-- Add warning if there are locked features or safety issues
-	if #lockedFeatures > 0 or #safetyIssues > 0 then
-		pcall(function()
-			Status:AddSection({Name = "⚠️ System Warnings"})
-			
-			if #lockedFeatures > 0 then
-				Status:AddLabel("Locked Features:")
-				for _, feature in ipairs(lockedFeatures) do
-					Status:AddLabel("• 🔒 " .. feature)
-				end
-			end
-			
-			if #safetyIssues > 0 then
-				Status:AddLabel("Safety Issues:")
-				for _, issue in ipairs(safetyIssues) do
-					Status:AddLabel("• ⚠️ " .. issue)
-				end
-			end
-		end)
-	end
-	
 	uiLoaded = true
-	return Status, Aimbot, ESP, Extras, Configs, Keybinds, Info
+	return Status, Aimbot, ESP, Extras, Configs, Keybinds, Info, OrionLib
 end
 
 -- Main initialization sequence
@@ -1454,7 +1167,7 @@ task.spawn(function()
 		LoadingGui:Destroy()
 		
 		-- Create main UI
-		local Status, Aimbot, ESP, Extras, Configs, Keybinds, Info = createMainUI(lockedFeatures, safetyIssues)
+		local Status, Aimbot, ESP, Extras, Configs, Keybinds, Info, OrionLib = createMainUI(lockedFeatures, safetyIssues)
 		
 		if Status and OrionLib and typeof(OrionLib.MakeNotification) == "function" then
 			-- Show success notification
@@ -1496,7 +1209,7 @@ task.spawn(function()
 			Status:AddSection({Name = "🔧 System Status"})
 			
 			Status:AddLabel("Executor: " .. EXECUTOR_NAME)
-			Status:AddLabel("Script Version: v7.5")
+			Status:AddLabel("Script Version: v7.7")
 			Status:AddLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
 			Status:AddLabel("Place ID: " .. game.PlaceId)
 			
@@ -1548,7 +1261,7 @@ task.spawn(function()
 		-- Add Info tab content
 		pcall(function()
 			Info:AddSection({Name = "Phantom Suite Information"})
-			Info:AddLabel("Welcome to Phantom Suite v7.5!")
+			Info:AddLabel("Welcome to Phantom Suite v7.7!")
 			Info:AddLabel("Precision aimbot and ESP by Asuneteric")
 			
 			Info:AddSection({Name = "⚠️ Important Notice"})
