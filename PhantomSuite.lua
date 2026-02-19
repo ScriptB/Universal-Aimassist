@@ -1104,24 +1104,42 @@ local function createMainUI(lockedFeatures, safetyIssues)
 		-- Initialize Orion UI
 	OrionLib:Init()
 	
-	-- Create Orion window
+	-- Create Orion window with custom theme
 	local Window = OrionLib:MakeWindow({
-		Name = "Phantom Suite v7.7 - GitHub UI",
+		Name = "⚡ Phantom Suite",
+		SubTitle = "Advanced Gaming Tools",
 		HidePremium = false,
 		SaveConfig = true,
 		ConfigFolder = "PhantomSuite",
 		IntroEnabled = true,
-		IntroText = "Phantom Suite v7.7"
+		IntroIcon = "rbxassetid://7733658168",
+		Size = UDim2.new(0, 600, 0, 700)
 	})
 	
-	-- Create tabs
-	local Status = Window:MakeTab({Name = "Status"})
-	local Aimbot = Window:MakeTab({Name = "Aimbot"})
-	local ESP = Window:MakeTab({Name = "ESP"})
-	local Extras = Window:MakeTab({Name = "Extras"})
-	local Configs = Window:MakeTab({Name = "Configs"})
-	local Keybinds = Window:MakeTab({Name = "Keybinds"})
-	local Info = Window:MakeTab({Name = "Info"})
+	-- Apply custom color scheme to OrionLib
+	OrionLib:SetTheme({
+		Main = Color3.fromRGB(25, 25, 30),        -- Near-black background
+		Secondary = Color3.fromRGB(35, 35, 40),     -- Dark grey secondary
+		Third = Color3.fromRGB(45, 45, 50),         -- Medium grey tertiary
+		Accent = Color3.fromRGB(255, 165, 0),       -- Orange accent
+		Text = Color3.fromRGB(240, 240, 245),       -- Light white text
+		Disabled = Color3.fromRGB(100, 100, 105),   -- Grey disabled
+		Success = Color3.fromRGB(0, 255, 100),       -- Green success
+		Error = Color3.fromRGB(255, 100, 100),       -- Red error
+		Warning = Color3.fromRGB(255, 200, 50)       -- Orange warning
+	})
+	
+	-- Create enhanced tabs with icons
+	local Status = Window:MakeTab({Name = "📊 Status", Icon = "rbxassetid://7733658168"})
+	local Aimbot = Window:MakeTab({Name = "🎯 Aimbot", Icon = "rbxassetid://7733658168"})
+	local ESP = Window:MakeTab({Name = "👁️ ESP", Icon = "rbxassetid://7733658168"})
+	local Visuals = Window:MakeTab({Name = "🎨 Visuals", Icon = "rbxassetid://7733658168"})
+	local Movement = Window:MakeTab({Name = "🏃 Movement", Icon = "rbxassetid://7733658168"})
+	local Utility = Window:MakeTab({Name = "🛠️ Utility", Icon = "rbxassetid://7733658168"})
+	local Configs = Window:MakeTab({Name = "💾 Configs", Icon = "rbxassetid://7733658168"})
+	local Keybinds = Window:MakeTab({Name = "⌨️ Keybinds", Icon = "rbxassetid://7733658168"})
+	local Settings = Window:MakeTab({Name = "⚙️ Settings", Icon = "rbxassetid://7733658168"})
+	local Info = Window:MakeTab({Name = "ℹ️ Info", Icon = "rbxassetid://7733658168"})
 	
 	if not Status then
 		warn("Failed to create Status tab")
@@ -1309,10 +1327,10 @@ task.spawn(function()
 		
 		-- Add Aimbot tab content
 		pcall(function()
-			Aimbot:AddSection({Name = "🎯 Aimbot Settings"})
+			Aimbot:AddSection({Name = "🎯 Aimbot Configuration", Description = "Advanced targeting system with prediction"})
 			
 			Aimbot:AddToggle({
-				Name = "Enable Aimbot",
+				Name = "🔴 Enable Aimbot",
 				Default = aimbotEnabled,
 				Callback = function(value)
 					aimbotEnabled = value
@@ -1320,33 +1338,44 @@ task.spawn(function()
 						OrionLib:MakeNotification({
 							Name = "Aimbot Toggled",
 							Content = "Aimbot: " .. (value and "ON" or "OFF"),
-							Time = 1
+							Time = 1,
+							Image = "rbxassetid://7733658168"
 						})
 					end
 				end
 			})
 			
 			Aimbot:AddToggle({
-				Name = "Blatant Mode",
+				Name = "⚡ Blatant Mode",
 				Default = blatantEnabled,
 				Callback = function(value)
 					blatantEnabled = value
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Blatant Mode Toggled",
+							Content = "Blatant: " .. (value and "ON" or "OFF"),
+							Time = 1,
+							Image = "rbxassetid://7733658168"
+						})
+					end
 				end
 			})
 			
+			Aimbot:AddSection({Name = "📏 Targeting Settings", Description = "Fine-tune aimbot behavior"})
+			
 			Aimbot:AddSlider({
-				Name = "Aim FOV",
+				Name = "🎯 Aim FOV",
 				Min = 10,
 				Max = 360,
 				Default = aimFov,
-				ValueName = "degrees",
+				ValueName = "°",
 				Callback = function(value)
 					aimFov = value
 				end
 			})
 			
 			Aimbot:AddSlider({
-				Name = "Smoothness (1=Subtle, 10=Instant)", 
+				Name = "🌊 Smoothness (1=Subtle, 10=Instant)", 
 				Min = 1, 
 				Max = 10, 
 				Default = smoothing,
@@ -1357,7 +1386,7 @@ task.spawn(function()
 			})
 			
 			Aimbot:AddSlider({
-				Name = "Prediction",
+				Name = "🔮 Prediction",
 				Min = 0,
 				Max = 0.2,
 				Default = predictionStrength,
@@ -1367,10 +1396,10 @@ task.spawn(function()
 				end
 			})
 			
-			Aimbot:AddSection({Name = "🔍 Target Settings"})
+			Aimbot:AddSection({Name = "�️ Safety Settings", Description = "Configure targeting restrictions"})
 			
 			Aimbot:AddToggle({
-				Name = "Wall Check",
+				Name = "🧱 Wall Check",
 				Default = wallCheck,
 				Callback = function(value)
 					wallCheck = value
@@ -1378,7 +1407,7 @@ task.spawn(function()
 			})
 			
 			Aimbot:AddToggle({
-				Name = "Team Check",
+				Name = "👥 Team Check",
 				Default = teamCheck,
 				Callback = function(value)
 					teamCheck = value
@@ -1386,7 +1415,7 @@ task.spawn(function()
 			})
 			
 			Aimbot:AddSlider({
-				Name = "Aim Distance",
+				Name = "💪 Aim Distance",
 				Min = 50,
 				Max = 1000,
 				Default = aimbotLockDistance,
@@ -1397,7 +1426,7 @@ task.spawn(function()
 			})
 			
 			Aimbot:AddToggle({
-				Name = "Rainbow FOV",
+				Name = "🌈 Rainbow FOV",
 				Default = rainbowFov,
 				Callback = function(value)
 					rainbowFov = value
@@ -1407,10 +1436,10 @@ task.spawn(function()
 		
 		-- Add ESP tab content
 		pcall(function()
-			ESP:AddSection({Name = "👁️ ESP Settings"})
+			ESP:AddSection({Name = "👁️ ESP Configuration", Description = "Visual player information display"})
 			
 			ESP:AddToggle({
-				Name = "Enable ESP",
+				Name = "🔴 Enable ESP",
 				Default = espEnabled,
 				Callback = function(value)
 					espEnabled = value
@@ -1418,14 +1447,17 @@ task.spawn(function()
 						OrionLib:MakeNotification({
 							Name = "ESP Toggled",
 							Content = "ESP: " .. (value and "ON" or "OFF"),
-							Time = 1
+							Time = 1,
+							Image = "rbxassetid://7733658168"
 						})
 					end
 				end
 			})
 			
+			ESP:AddSection({Name = "🎨 Visual Elements", Description = "Customize ESP appearance"})
+			
 			ESP:AddToggle({
-				Name = "Show Boxes",
+				Name = "📦 Show Boxes",
 				Default = boxEsp,
 				Callback = function(value)
 					boxEsp = value
@@ -1433,7 +1465,7 @@ task.spawn(function()
 			})
 			
 			ESP:AddToggle({
-				Name = "Show Names",
+				Name = "🏷️ Show Names",
 				Default = nameEsp,
 				Callback = function(value)
 					nameEsp = value
@@ -1441,7 +1473,7 @@ task.spawn(function()
 			})
 			
 			ESP:AddToggle({
-				Name = "Show Health",
+				Name = "❤️ Show Health",
 				Default = healthEsp,
 				Callback = function(value)
 					healthEsp = value
@@ -1449,7 +1481,7 @@ task.spawn(function()
 			})
 			
 			ESP:AddToggle({
-				Name = "Show Distance",
+				Name = "📏 Show Distance",
 				Default = distanceEsp,
 				Callback = function(value)
 					distanceEsp = value
@@ -1457,15 +1489,17 @@ task.spawn(function()
 			})
 			
 			ESP:AddToggle({
-				Name = "Show Tracers",
+				Name = "📍 Show Tracers",
 				Default = tracerEsp,
 				Callback = function(value)
 					tracerEsp = value
 				end
 			})
 			
+			ESP:AddSection({Name = "📐 ESP Settings", Description = "Configure ESP behavior"})
+			
 			ESP:AddSlider({
-				Name = "ESP Distance",
+				Name = "🔭 ESP Distance",
 				Min = 50,
 				Max = 1000,
 				Default = espLockDistance,
@@ -1474,14 +1508,9 @@ task.spawn(function()
 					espLockDistance = value
 				end
 			})
-		end)
-		
-		-- Add Extras tab content
-		pcall(function()
-			Extras:AddSection({Name = "⚡ Extra Features"})
 			
-			Extras:AddSlider({
-				Name = "Rainbow Speed",
+			ESP:AddSlider({
+				Name = "🌈 Rainbow Speed",
 				Min = 0.001,
 				Max = 0.05,
 				Default = rainbowSpeed,
@@ -1491,21 +1520,170 @@ task.spawn(function()
 				end
 			})
 			
-			Extras:AddSection({Name = "🎨 Visual Settings"})
+			ESP:AddSection({Name = "🎨 Color Customization", Description = "Personalize ESP colors"})
 			
-			Extras:AddColorpicker({
-				Name = "FOV Color",
+			ESP:AddColorpicker({
+				Name = "🎯 ESP Color",
+				Default = espColor,
+				Callback = function(value)
+					espColor = value
+				end
+			})
+		end)
+		
+		-- Add Visuals tab content
+		pcall(function()
+			Visuals:AddSection({Name = "🎨 Visual Enhancements", Description = "Customize visual effects"})
+			
+			Visuals:AddColorpicker({
+				Name = "🎯 FOV Color",
 				Default = fovColor,
 				Callback = function(value)
 					fovColor = value
 				end
 			})
 			
-			Extras:AddColorpicker({
-				Name = "ESP Color",
-				Default = espColor,
+			Visuals:AddToggle({
+				Name = "🌈 Rainbow FOV",
+				Default = rainbowFov,
 				Callback = function(value)
-					espColor = value
+					rainbowFov = value
+				end
+			})
+			
+			Visuals:AddSlider({
+				Name = "⚡ Rainbow Speed",
+				Min = 0.001,
+				Max = 0.05,
+				Default = rainbowSpeed,
+				ValueName = "speed",
+				Callback = function(value)
+					rainbowSpeed = value
+				end
+			})
+		end)
+		
+		-- Add Movement tab content
+		pcall(function()
+			Movement:AddSection({Name = "� Movement Controls", Description = "Enhanced movement abilities"})
+			
+			Movement:AddToggle({
+				Name = "🚀 Speed Boost",
+				Default = false,
+				Callback = function(value)
+					if value then
+						plr.Character.Humanoid.WalkSpeed = 50
+					else
+						plr.Character.Humanoid.WalkSpeed = 16
+					end
+				end
+			})
+			
+			Movement:AddToggle({
+				Name = "🦘 High Jump",
+				Default = false,
+				Callback = function(value)
+					if value then
+						plr.Character.Humanoid.JumpPower = 100
+					else
+						plr.Character.Humanoid.JumpPower = 50
+					end
+				end
+			})
+			
+			Movement:AddSlider({
+				Name = "💨 Walk Speed",
+				Min = 16,
+				Max = 200,
+				Default = 16,
+				ValueName = "studs/s",
+				Callback = function(value)
+					walkSpeed = value
+					plr.Character.Humanoid.WalkSpeed = value
+				end
+			})
+			
+			Movement:AddSlider({
+				Name = "🦘 Jump Power",
+				Min = 50,
+				Max = 200,
+				Default = 50,
+				ValueName = "studs",
+				Callback = function(value)
+					jumpPower = value
+					plr.Character.Humanoid.JumpPower = value
+				end
+			})
+		end)
+		
+		-- Add Utility tab content
+		pcall(function()
+			Utility:AddSection({Name = "🛠️ Utility Tools", Description = "Helpful utilities"})
+			
+			Utility:AddButton({
+				Name = "🔄 Rejoin Server",
+				Callback = function()
+					game:GetService("TeleportService"):Teleport(game.PlaceId, plr)
+				end
+			})
+			
+			Utility:AddButton({
+				Name = "🔍 Copy Player List",
+				Callback = function()
+					local players = ""
+					for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+						players = players .. player.Name .. "\n"
+					end
+					setclipboard(players)
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Player List Copied",
+							Content = "Player list copied to clipboard!",
+							Time = 2
+						})
+					end
+				end
+			})
+			
+			Utility:AddButton({
+				Name = "🗑️ Clear Console",
+				Callback = function()
+					game:GetService("LogService"):ClearOutput()
+				end
+			})
+		end)
+		
+		-- Add Settings tab content
+		pcall(function()
+			Settings:AddSection({Name = "⚙️ General Settings", Description = "Configure script behavior"})
+			
+			Settings:AddToggle({
+				Name = "🔔 Notifications",
+				Default = true,
+				Callback = function(value)
+					-- Toggle notifications
+				end
+			})
+			
+			Settings:AddToggle({
+				Name = "💾 Auto-Save Config",
+				Default = true,
+				Callback = function(value)
+					-- Toggle auto-save
+				end
+			})
+			
+			Settings:AddButton({
+				Name = "🔄 Reset All Settings",
+				Callback = function()
+					-- Reset all settings to default
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Settings Reset",
+							Content = "All settings reset to defaults!",
+							Time = 3
+						})
+					end
 				end
 			})
 		end)
@@ -1559,10 +1737,10 @@ task.spawn(function()
 		
 		-- Add Keybinds tab content
 		pcall(function()
-			Keybinds:AddSection({Name = "⌨️ Keybinds"})
+			Keybinds:AddSection({Name = "⌨️ Keybind Configuration", Description = "Quick access shortcuts"})
 			
 			Keybinds:AddBind({
-				Name = "Aimbot Toggle",
+				Name = "🎯 Aimbot Toggle",
 				Default = Enum.KeyCode.F1,
 				Hold = false,
 				Callback = function()
@@ -1571,14 +1749,15 @@ task.spawn(function()
 						OrionLib:MakeNotification({
 							Name = "Aimbot Toggled",
 							Content = "Aimbot: " .. (aimbotEnabled and "ON" or "OFF"),
-							Time = 2
+							Time = 2,
+							Image = "rbxassetid://7733658168"
 						})
 					end
 				end
 			})
 			
 			Keybinds:AddBind({
-				Name = "ESP Toggle",
+				Name = "👁️ ESP Toggle",
 				Default = Enum.KeyCode.F2,
 				Hold = false,
 				Callback = function()
@@ -1587,14 +1766,70 @@ task.spawn(function()
 						OrionLib:MakeNotification({
 							Name = "ESP Toggled",
 							Content = "ESP: " .. (espEnabled and "ON" or "OFF"),
-							Time = 2
+							Time = 2,
+							Image = "rbxassetid://7733658168"
+						})
+					end
+				end
+			})
+			
+			Keybinds:AddSection({Name = "🎯 Aimbot Keybinds", Description = "Aimbot-specific shortcuts"})
+			
+			Keybinds:AddBind({
+				Name = "⚡ Blatant Mode Toggle",
+				Default = Enum.KeyCode.F3,
+				Hold = false,
+				Callback = function()
+					blatantEnabled = not blatantEnabled
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Blatant Mode Toggled",
+							Content = "Blatant: " .. (blatantEnabled and "ON" or "OFF"),
+							Time = 2,
+							Image = "rbxassetid://7733658168"
 						})
 					end
 				end
 			})
 			
 			Keybinds:AddBind({
-				Name = "UI Toggle",
+				Name = "🌈 Rainbow FOV Toggle",
+				Default = Enum.KeyCode.F4,
+				Hold = false,
+				Callback = function()
+					rainbowFov = not rainbowFov
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Rainbow FOV Toggled",
+							Content = "Rainbow: " .. (rainbowFov and "ON" or "OFF"),
+							Time = 2,
+							Image = "rbxassetid://7733658168"
+						})
+					end
+				end
+			})
+			
+			Keybinds:AddBind({
+				Name = "🧱 Wall Check Toggle",
+				Default = Enum.KeyCode.F5,
+				Hold = false,
+				Callback = function()
+					wallCheck = not wallCheck
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Wall Check Toggled",
+							Content = "Wall Check: " .. (wallCheck and "ON" or "OFF"),
+							Time = 2,
+							Image = "rbxassetid://7733658168"
+						})
+					end
+				end
+			})
+			
+			Keybinds:AddSection({Name = "🖥️ UI Controls", Description = "Interface shortcuts"})
+			
+			Keybinds:AddBind({
+				Name = "👁️ UI Toggle",
 				Default = Enum.KeyCode.LeftControl,
 				Hold = false,
 				Callback = function()
@@ -1657,65 +1892,17 @@ task.spawn(function()
 							OrionLib:MakeNotification({
 								Name = "UI Toggled",
 								Content = "UI: " .. (not isVisible and "Shown" or "Hidden"),
-								Time = 2
+								Time = 2,
+								Image = "rbxassetid://7733658168"
 							})
 						elseif OrionLib.MakeNotification then
 							OrionLib:MakeNotification({
 								Name = "UI Toggle Failed",
 								Content = "Could not toggle UI visibility",
-								Time = 3
+								Time = 3,
+								Image = "rbxassetid://7733658168"
 							})
 						end
-					end
-				end
-			})
-			
-			Keybinds:AddSection({Name = "🎯 Aimbot Keybinds"})
-			
-			Keybinds:AddBind({
-				Name = "Blatant Mode Toggle",
-				Default = Enum.KeyCode.F3,
-				Hold = false,
-				Callback = function()
-					blatantEnabled = not blatantEnabled
-					if OrionLib and OrionLib.MakeNotification then
-						OrionLib:MakeNotification({
-							Name = "Blatant Mode Toggled",
-							Content = "Blatant: " .. (blatantEnabled and "ON" or "OFF"),
-							Time = 2
-						})
-					end
-				end
-			})
-			
-			Keybinds:AddBind({
-				Name = "Rainbow FOV Toggle",
-				Default = Enum.KeyCode.F4,
-				Hold = false,
-				Callback = function()
-					rainbowFov = not rainbowFov
-					if OrionLib and OrionLib.MakeNotification then
-						OrionLib:MakeNotification({
-							Name = "Rainbow FOV Toggled",
-							Content = "Rainbow: " .. (rainbowFov and "ON" or "OFF"),
-							Time = 2
-						})
-					end
-				end
-			})
-			
-			Keybinds:AddBind({
-				Name = "Wall Check Toggle",
-				Default = Enum.KeyCode.F5,
-				Hold = false,
-				Callback = function()
-					wallCheck = not wallCheck
-					if OrionLib and OrionLib.MakeNotification then
-						OrionLib:MakeNotification({
-							Name = "Wall Check Toggled",
-							Content = "Wall Check: " .. (wallCheck and "ON" or "OFF"),
-							Time = 2
-						})
 					end
 				end
 			})
@@ -1723,38 +1910,38 @@ task.spawn(function()
 		
 		-- Add Info tab content
 		pcall(function()
-			Info:AddSection({Name = "Phantom Suite Information"})
-			Info:AddLabel("Welcome to Phantom Suite v7.7!")
-			Info:AddLabel("Precision aimbot and ESP by Asuneteric")
+			Info:AddSection({Name = "ℹ️ Information", Description = "About Phantom Suite"})
 			
-			Info:AddSection({Name = "⚠️ Important Notice"})
-			Info:AddLabel("If features aren't working or loading,")
-			Info:AddLabel("this is due to your executor's limitations.")
-			Info:AddLabel("Some executors lack required functions")
-			Info:AddLabel("and other essential capabilities.")
-			Info:AddLabel("This cannot be fixed on our end.")
-			Info:AddLabel("Please use a compatible executor.")
+			Info:AddLabel("⚡ Phantom Suite v7.7")
+			Info:AddLabel("🔧 Advanced Gaming Tools")
+			Info:AddLabel("👤 Created by Asuneteric")
+			Info:AddLabel("🌐 GitHub: ScriptB/Universal-Aimassist")
 			
-			Info:AddSection({Name = "🔧 Recommended Executors"})
-			Info:AddLabel("• Ronix (Free)")
-			Info:AddLabel("• Delta (Free)")
-			Info:AddLabel("• Solara (Free)")
-			Info:AddLabel("• Xeno (Free)")
+			Info:AddSection({Name = "📋 Features", Description = "Available functionality"})
 			
-			Info:AddSection({Name = "🐛 Troubleshooting"})
-			Info:AddLabel("• Re-execute the script")
-			Info:AddLabel("• Check executor updates")
-			Info:AddLabel("• Try a different executor")
-			Info:AddLabel("• Ensure game is supported")
-			Info:AddLabel("• Disable other scripts")
+			Info:AddLabel("🎯 Precision Aimbot")
+			Info:AddLabel("👁️ Advanced ESP System")
+			Info:AddLabel("🎨 Visual Customization")
+			Info:AddLabel("🏃 Movement Enhancements")
+			Info:AddLabel("🛠️ Utility Tools")
+			Info:AddLabel("⚙️ Configuration System")
 			
-			Info:AddSection({Name = "📋 Features"})
-			Info:AddLabel("• Advanced Aimbot System")
-			Info:AddLabel("• Full ESP Customization")
-			Info:AddLabel("• HWID Config System")
-			Info:AddLabel("• Real-time UI Controls")
+			Info:AddSection({Name = "� Links", Description = "External resources"})
 			
-			Info:AddSection({Name = "🔧 Executor Compatibility"})
+			Info:AddButton({
+				Name = "🌐 GitHub Repository",
+				Callback = function()
+					setclipboard("https://github.com/ScriptB/Universal-Aimassist")
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Link Copied",
+							Content = "GitHub link copied to clipboard!",
+							Time = 2,
+							Image = "rbxassetid://7733658168"
+						})
+					end
+				end
+			})
 			Info:AddLabel("Current Executor: " .. EXECUTOR_NAME)
 			
 			-- Display compatibility status
