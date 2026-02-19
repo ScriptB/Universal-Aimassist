@@ -49,21 +49,39 @@ do
 	end
 end
 
--- Theme (glass)
+-- Enhanced Theme (premium glass morphism)
 local Theme = {
-	BG_Dim = Color3.fromRGB(0,0,0),
-	BG_DimAlpha = 0.55,
+	BG_Dim = Color3.fromRGB(5,8,20),
+	BG_DimAlpha = 0.65,
 
-	Glass = Color3.fromRGB(245,250,255),
-	Glass2 = Color3.fromRGB(225,235,250),
-	Stroke = Color3.fromRGB(180,205,255),
+	-- Glass surfaces with depth
+	Glass = Color3.fromRGB(248,252,255),
+	Glass2 = Color3.fromRGB(235,243,253),
+	Glass3 = Color3.fromRGB(220,235,250),
+	
+	-- Enhanced strokes with depth
+	Stroke = Color3.fromRGB(140,180,255),
+	StrokeDark = Color3.fromRGB(100,140,220),
+	StrokeLight = Color3.fromRGB(200,220,255),
 
-	Text = Color3.fromRGB(20,30,60),
-	Text2 = Color3.fromRGB(60,80,120),
+	-- Text with better hierarchy
+	Text = Color3.fromRGB(15,25,55),
+	Text2 = Color3.fromRGB(45,65,105),
+	Text3 = Color3.fromRGB(80,100,140),
 
-	Accent = Color3.fromRGB(100,150,255),
-	Good = Color3.fromRGB(90,210,120),
-	Bad  = Color3.fromRGB(255,110,110),
+	-- Enhanced accent colors
+	Accent = Color3.fromRGB(80,130,255),
+	Accent2 = Color3.fromRGB(120,100,255),
+	Accent3 = Color3.fromRGB(255,120,180),
+	
+	-- Status colors with better contrast
+	Good = Color3.fromRGB(50,200,100),
+	Warn = Color3.fromRGB(255,180,50),
+	Bad  = Color3.fromRGB(255,80,80),
+	
+	-- Shadow colors
+	Shadow = Color3.fromRGB(0,10,30),
+	ShadowLight = Color3.fromRGB(20,40,80),
 }
 
 local function clamp(n,a,b) if n<a then return a elseif n>b then return b end return n end
@@ -80,6 +98,49 @@ local function mkCorner(parent, r)
 	end
 	
 	return c
+end
+
+-- Enhanced shadow system
+local function mkShadow(parent, size, color, transparency)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.BackgroundTransparency = transparency or 0.8
+	shadow.BackgroundColor3 = color or Theme.Shadow
+	shadow.BorderSizePixel = 0
+	shadow.Size = UDim2.new(1, size*2, 1, size*2)
+	shadow.Position = UDim2.new(0, -size, 0, -size)
+	shadow.ZIndex = parent.ZIndex - 1
+	shadow.Parent = parent
+	mkCorner(shadow, parent:FindFirstChildOfClass("UICorner") and parent.UICorner.CornerRadius.Offset or 12)
+	return shadow
+end
+
+-- Enhanced glow effect
+local function mkGlow(parent, color, intensity)
+	local glow = Instance.new("Frame")
+	glow.Name = "Glow"
+	glow.BackgroundTransparency = 0.9 - (intensity or 0.1)
+	glow.BackgroundColor3 = color or Theme.Accent
+	glow.BorderSizePixel = 0
+	glow.Size = UDim2.new(1, 8, 1, 8)
+	glow.Position = UDim2.new(0, -4, 0, -4)
+	glow.ZIndex = parent.ZIndex - 2
+	glow.Parent = parent
+	mkCorner(glow, parent:FindFirstChildOfClass("UICorner") and parent.UICorner.CornerRadius.Offset or 12)
+	return glow
+end
+
+-- Enhanced gradient with more colors
+local function mkGradient(parent, rot, c0, c1, c2)
+	local g = Instance.new("UIGradient")
+	g.Rotation = rot or 45
+	if c2 then
+		g.Color = ColorSequence.new({c0, c1, c2})
+	else
+		g.Color = ColorSequence.new(c0, c1)
+	end
+	g.Parent = parent
+	return g
 end
 
 local function mkStroke(parent, thickness, alpha, color)
@@ -185,35 +246,36 @@ local function spawnParticles(count)
 	end
 end
 
--- Dock
+-- Enhanced Dock with premium visual effects
 local Dock = Instance.new("Frame")
 Dock.Name = "Dock"
 Dock.AnchorPoint = Vector2.new(0.5, 1)
-Dock.Size = UDim2.new(0, 600, 0, 84)
+Dock.Size = UDim2.new(0, 640, 0, 92)
 Dock.Position = UDim2.new(0.5, 0, 1, -22)
 Dock.BackgroundColor3 = Theme.Glass
-Dock.BackgroundTransparency = 0.82
+Dock.BackgroundTransparency = 0.85
 Dock.BorderSizePixel = 0
 Dock.ClipsDescendants = true -- Prevent content spill over rounded corners
 Dock.ZIndex = 10
 Dock.Parent = Root
-mkCorner(Dock, 32) -- Increased for smoother edges
-mkStroke(Dock, 2, 0.35, Theme.Stroke)
-mkGradient(Dock, 90, Theme.Glass, Theme.Glass2, Theme.Glass)
-mkShadow(Dock, 0.62)
+mkCorner(Dock, 36) -- Increased for smoother edges
+mkStroke(Dock, 2, 0.25, Theme.Stroke)
+mkGradient(Dock, 90, Theme.Glass, Theme.Glass2, Theme.Glass3)
+mkShadow(Dock, 12, Theme.Shadow, 0.6)
+mkGlow(Dock, Theme.Accent, 0.05)
 
 local DockInner = Instance.new("Frame")
 DockInner.Name = "Inner"
-DockInner.BackgroundColor3 = Theme.Glass
-DockInner.BackgroundTransparency = 0.90
+DockInner.BackgroundColor3 = Theme.Glass2
+DockInner.BackgroundTransparency = 0.92
 DockInner.BorderSizePixel = 0
-DockInner.Size = UDim2.new(1, -20, 1, -20)
-DockInner.Position = UDim2.new(0, 10, 0, 10)
+DockInner.Size = UDim2.new(1, -24, 1, -24)
+DockInner.Position = UDim2.new(0, 12, 0, 12)
 DockInner.ClipsDescendants = true -- Prevent content spill over rounded corners
 DockInner.ZIndex = 11
 DockInner.Parent = Dock
-mkCorner(DockInner, 24) -- Increased for smoother edges
-mkStroke(DockInner, 1, 0.55, Theme.Stroke)
+mkCorner(DockInner, 28) -- Increased for smoother edges
+mkStroke(DockInner, 1, 0.40, Theme.StrokeLight)
 
 -- Left title (fixed width)
 local DockTitle = Instance.new("TextLabel")
@@ -348,33 +410,56 @@ local function mkDockBubbleButton(cfg)
 	btn.Name = cfg.Key
 	btn.AutoButtonColor = false
 	btn.BackgroundColor3 = Theme.Glass
-	btn.BackgroundTransparency = 0.86
+	btn.BackgroundTransparency = 0.88
 	btn.BorderSizePixel = 0
-	btn.Size = UDim2.new(0, 50, 0, 50)
+	btn.Size = UDim2.new(0, 54, 0, 54)
 	btn.ClipsDescendants = true -- Prevent icon spill over rounded corners
 	btn.Text = ""
 	btn.ZIndex = 12
 	btn.Parent = DockTabs
-	mkCorner(btn, 24) -- Increased for smoother edges
-	mkStroke(btn, 1, 0.55, Theme.Stroke)
-	mkGradient(btn, 55, Theme.Glass, Theme.Glass2, Theme.Glass)
+	mkCorner(btn, 28) -- Increased for smoother edges
+	mkStroke(btn, 1, 0.35, Theme.StrokeLight)
+	mkGradient(btn, 55, Theme.Glass, Theme.Glass2, Theme.Glass3)
+	mkShadow(btn, 6, Theme.Shadow, 0.4)
 
 	local ico = Instance.new("TextLabel")
 	ico.BackgroundTransparency = 1
 	ico.Size = UDim2.new(1,0,1,0)
 	ico.Font = Enum.Font.GothamBold
-	ico.TextSize = 18
+	ico.TextSize = 20
 	ico.TextColor3 = Theme.Text
 	ico.Text = cfg.Icon
 	ico.ZIndex = 13
 	ico.Parent = btn
 
+	-- Enhanced hover and click animations
+	local hoverTween, clickTween
 	btn.MouseEnter:Connect(function()
-		tween(btn, TweenInfo.new(0.12, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.80})
+		hoverTween = tween(btn, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			BackgroundTransparency = 0.75,
+			Size = UDim2.new(0, 58, 0, 58)
+		})
+		hoverTween = tween(ico, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			TextTransparency = 0,
+			TextSize = 22
+		})
+		mkGlow(btn, Theme.Accent, 0.08)
 	end)
+
 	btn.MouseLeave:Connect(function()
-		tween(btn, TweenInfo.new(0.16, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.86})
+		if hoverTween then hoverTween:Cancel() end
+		hoverTween = tween(btn, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			BackgroundTransparency = 0.88,
+			Size = UDim2.new(0, 54, 0, 54)
+		})
+		hoverTween = tween(ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			TextTransparency = 0.1,
+			TextSize = 20
+		})
+		local glow = btn:FindFirstChild("Glow")
+		if glow then glow:Destroy() end
 	end)
+
 	btn.MouseButton1Down:Connect(function()
 		tween(btn, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 46, 0, 46)})
 	end)
@@ -385,56 +470,58 @@ local function mkDockBubbleButton(cfg)
 	return btn
 end
 
--- Bubble card (more “bubble” than square: softer, rounder, highlight layer)
+-- Enhanced Bubble card with premium visual effects
 local function mkBubbleCard(key, titleText)
 	local card = Instance.new("Frame")
 	card.Name = "Bubble_"..key
 	card.AnchorPoint = Vector2.new(0.5, 0.5) -- easier clamping/rows
-	card.Size = UDim2.new(0, 320, 0, 260)
+	card.Size = UDim2.new(0, 340, 0, 280)
 	card.BackgroundColor3 = Theme.Glass
-	card.BackgroundTransparency = 0.84
+	card.BackgroundTransparency = 0.86
 	card.BorderSizePixel = 0
 	card.ClipsDescendants = true -- Prevent content spill over rounded corners
 	card.ZIndex = 30
 	card.Visible = false
 	card.Parent = Root
-	mkCorner(card, 52) -- Increased for much rounder bubbles
-	mkStroke(card, 2, 0.30, Theme.Stroke)
-	mkGradient(card, 110, Theme.Glass, Theme.Glass2, Theme.Glass)
-	mkShadow(card, 0.58)
+	mkCorner(card, 58) -- Increased for much rounder bubbles
+	mkStroke(card, 2, 0.25, Theme.StrokeLight)
+	mkGradient(card, 110, Theme.Glass, Theme.Glass2, Theme.Glass3)
+	mkShadow(card, 16, Theme.Shadow, 0.5)
+	mkGlow(card, Theme.Accent, 0.03)
 
-	-- highlight sheen
+	-- Enhanced highlight sheen with animated gradient
 	local sheen = Instance.new("Frame")
 	sheen.Name = "Sheen"
 	sheen.BackgroundTransparency = 1
-	sheen.Size = UDim2.new(1, -28, 0.42, 0)
-	sheen.Position = UDim2.new(0, 14, 0, 10)
+	sheen.Size = UDim2.new(1, -32, 0.45, 0)
+	sheen.Position = UDim2.new(0, 16, 0, 12)
 	sheen.ZIndex = 31
 	sheen.Parent = card
-	mkCorner(sheen, 46) -- Increased for smoother edges
+	mkCorner(sheen, 52) -- Increased for smoother edges
+	
 	local sheenFill = Instance.new("Frame")
 	sheenFill.BackgroundColor3 = Color3.fromRGB(255,255,255)
-	sheenFill.BackgroundTransparency = 0.92
+	sheenFill.BackgroundTransparency = 0.94
 	sheenFill.BorderSizePixel = 0
 	sheenFill.Size = UDim2.new(1,0,1,0)
 	sheenFill.Parent = sheen
-	mkCorner(sheenFill, 46) -- Increased for smoother edges
-	mkGradient(sheenFill, 35, Color3.fromRGB(255,255,255), Color3.fromRGB(240,248,255))
+	mkCorner(sheenFill, 52) -- Increased for smoother edges
+	mkGradient(sheenFill, 45, Color3.fromRGB(255,255,255), Color3.fromRGB(240,248,255), Color3.fromRGB(220,235,250))
 
 	local top = Instance.new("Frame")
 	top.Name = "Top"
 	top.BackgroundTransparency = 1
-	top.Size = UDim2.new(1, -20, 0, 52)
-	top.Position = UDim2.new(0, 10, 0, 10)
+	top.Size = UDim2.new(1, -24, 0, 58)
+	top.Position = UDim2.new(0, 12, 0, 12)
 	top.ZIndex = 32
 	top.Parent = card
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.new(1, -110, 1, 0)
-	title.Position = UDim2.new(0, 12, 0, 0)
+	title.Size = UDim2.new(1, -120, 1, 0)
+	title.Position = UDim2.new(0, 14, 0, 0)
 	title.Font = Enum.Font.GothamBold
-	title.TextSize = 16
+	title.TextSize = 18
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = Theme.Text
 	title.Text = titleText
@@ -444,26 +531,27 @@ local function mkBubbleCard(key, titleText)
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
 	close.AutoButtonColor = false
-	close.BackgroundColor3 = Theme.Glass
-	close.BackgroundTransparency = 0.88
+	close.BackgroundColor3 = Theme.Glass2
+	close.BackgroundTransparency = 0.85
 	close.BorderSizePixel = 0
-	close.Size = UDim2.new(0, 38, 0, 38)
+	close.Size = UDim2.new(0, 42, 0, 42)
 	close.ClipsDescendants = true -- Prevent text spill over rounded corners
-	close.Position = UDim2.new(1, -52, 0, 7)
+	close.Position = UDim2.new(1, -56, 0, 8)
 	close.Text = "↩"
 	close.Font = Enum.Font.GothamBold
-	close.TextSize = 16
+	close.TextSize = 18
 	close.TextColor3 = Theme.Text
 	close.ZIndex = 33
 	close.Parent = top
-	mkCorner(close, 22) -- Increased for smoother edges
-	mkStroke(close, 1, 0.55, Theme.Stroke)
+	mkCorner(close, 24) -- Increased for smoother edges
+	mkStroke(close, 1, 0.40, Theme.StrokeLight)
+	mkShadow(close, 4, Theme.Shadow, 0.3)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.BackgroundTransparency = 1
-	content.Size = UDim2.new(1, -20, 1, -74)
-	content.Position = UDim2.new(0, 10, 0, 64)
+	content.Size = UDim2.new(1, -24, 1, -82)
+	content.Position = UDim2.new(0, 12, 0, 72)
 	content.ZIndex = 32
 	content.Parent = card
 
@@ -477,22 +565,24 @@ end
 
 local function mkPill(parent, text, color)
 	local pill = Instance.new("Frame")
-	pill.BackgroundColor3 = color or Theme.Glass2
-	pill.BackgroundTransparency = 0.82
+	pill.BackgroundColor3 = color or Theme.Glass3
+	pill.BackgroundTransparency = 0.85
 	pill.BorderSizePixel = 0
-	pill.Size = UDim2.new(1, 0, 0, 40)
+	pill.Size = UDim2.new(1, 0, 0, 44)
 	pill.ClipsDescendants = true -- Prevent text spill over rounded corners
 	pill.ZIndex = 33
 	pill.Parent = parent
-	mkCorner(pill, 22) -- Increased for smoother edges
-	mkStroke(pill, 1, 0.60, Theme.Stroke)
+	mkCorner(pill, 24) -- Increased for smoother edges
+	mkStroke(pill, 1, 0.50, Theme.StrokeLight)
+	mkGradient(pill, 90, Theme.Glass2, Theme.Glass3, Theme.Glass)
+	mkShadow(pill, 4, Theme.Shadow, 0.3)
 
 	local lbl = Instance.new("TextLabel")
 	lbl.BackgroundTransparency = 1
 	lbl.Size = UDim2.new(1, -20, 1, 0)
 	lbl.Position = UDim2.new(0, 12, 0, 0)
 	lbl.Font = Enum.Font.GothamMedium
-	lbl.TextSize = 14
+	lbl.TextSize = 15
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.TextColor3 = Theme.Text
 	lbl.Text = text
@@ -504,23 +594,25 @@ end
 local function mkToggleRow(parent, name, get, set)
 	local row = Instance.new("TextButton")
 	row.AutoButtonColor = false
-	row.BackgroundColor3 = Theme.Glass2
-	row.BackgroundTransparency = 0.84
+	row.BackgroundColor3 = Theme.Glass3
+	row.BackgroundTransparency = 0.86
 	row.BorderSizePixel = 0
-	row.Size = UDim2.new(1, 0, 0, 44)
+	row.Size = UDim2.new(1, 0, 0, 48)
 	row.ClipsDescendants = true -- Prevent content spill over rounded corners
 	row.Text = ""
 	row.ZIndex = 33
 	row.Parent = parent
-	mkCorner(row, 22) -- Increased for smoother edges
-	mkStroke(row, 1, 0.60, Theme.Stroke)
+	mkCorner(row, 24) -- Increased for smoother edges
+	mkStroke(row, 1, 0.50, Theme.StrokeLight)
+	mkGradient(row, 90, Theme.Glass2, Theme.Glass3, Theme.Glass)
+	mkShadow(row, 3, Theme.Shadow, 0.25)
 
 	local txt = Instance.new("TextLabel")
 	txt.BackgroundTransparency = 1
 	txt.Size = UDim2.new(1, -110, 1, 0)
 	txt.Position = UDim2.new(0, 14, 0, 0)
 	txt.Font = Enum.Font.GothamMedium
-	txt.TextSize = 14
+	txt.TextSize = 15
 	txt.TextXAlignment = Enum.TextXAlignment.Left
 	txt.TextColor3 = Theme.Text
 	txt.Text = name
@@ -528,23 +620,24 @@ local function mkToggleRow(parent, name, get, set)
 	txt.Parent = row
 
 	local chip = Instance.new("Frame")
-	chip.Size = UDim2.new(0, 66, 0, 28)
+	chip.Size = UDim2.new(0, 70, 0, 30)
 	chip.ClipsDescendants = true -- Prevent text spill over rounded corners
-	chip.Position = UDim2.new(1, -86, 0.5, 0)
+	chip.Position = UDim2.new(1, -90, 0.5, 0)
 	chip.AnchorPoint = Vector2.new(0, 0.5)
 	chip.BackgroundColor3 = Theme.Accent
-	chip.BackgroundTransparency = 0.70
+	chip.BackgroundTransparency = 0.65
 	chip.BorderSizePixel = 0
 	chip.ZIndex = 34
 	chip.Parent = row
-	mkCorner(chip, 18) -- Increased for smoother edges
-	mkStroke(chip, 1, 0.55, Theme.Stroke)
+	mkCorner(chip, 20) -- Increased for smoother edges
+	mkStroke(chip, 1, 0.40, Theme.StrokeLight)
+	mkShadow(chip, 2, Theme.Shadow, 0.2)
 
 	local chipText = Instance.new("TextLabel")
 	chipText.BackgroundTransparency = 1
 	chipText.Size = UDim2.new(1,0,1,0)
 	chipText.Font = Enum.Font.GothamBold
-	chipText.TextSize = 13
+	chipText.TextSize = 14
 	chipText.TextColor3 = Color3.fromRGB(255,255,255)
 	chipText.ZIndex = 35
 	chipText.Parent = chip
@@ -553,14 +646,21 @@ local function mkToggleRow(parent, name, get, set)
 		local on = get()
 		chipText.Text = on and "ON" or "OFF"
 		chip.BackgroundColor3 = on and Theme.Good or Theme.Accent
+		-- Enhanced visual feedback for state changes
+		tween(chip, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, on and 74 or 70, 0, on and 32 or 30)
+		})
 	end
 	refresh()
 
+	-- Enhanced hover effects
 	row.MouseEnter:Connect(function()
-		tween(row, TweenInfo.new(0.12, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.78})
+		tween(row, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.80})
+		tween(chip, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.55})
 	end)
 	row.MouseLeave:Connect(function()
-		tween(row, TweenInfo.new(0.16, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.84})
+		tween(row, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.86})
+		tween(chip, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.65})
 	end)
 	row.MouseButton1Click:Connect(function()
 		set(not get()); refresh()
@@ -660,62 +760,92 @@ local function layoutOpenBubbles()
 	end
 end
 
--- Open/close
 local function openBubble(key)
-	local e = Bubbles[key]
-	if not e or e.Open then return end
-	e.Open = true
-	e.OpenTick = os.clock()
+	if Bubbles[key] and Bubbles[key].Open then return end
+	local entry = Bubbles[key]
+	if not entry then return end
 
-	local card = e.Card
+	local card = entry.Card
 	card.Visible = true
+	card.Rotation = 0
 	card.BackgroundTransparency = 1
 
-	local ox, oy = dockCenterPx()
-	card.Position = UDim2.new(0, ox, 0, oy)
+	local origin = dockCenterPx()
+	card.Position = origin
 	card.Size = UDim2.new(0, 0, 0, 0)
 
-	-- initial pop
-	tween(card, TweenInfo.new(0.36, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-		Size = e.TargetSize,
-		BackgroundTransparency = 0.84
+	-- Enhanced bubble positioning - center on screen with better offset
+	local vp = workspace.CurrentCamera.ViewportSize
+	local targetX = vp.X/2 -- Center horizontally
+	local targetY = vp.Y * 0.35 -- Position in upper 35% of screen
+	local targetPos = UDim2.new(0, targetX, 0, targetY)
+	local targetSize = entry.TargetSize
+
+	-- Enhanced opening animation with elastic effect
+	tween(card, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = targetPos,
+		Size = targetSize,
+		BackgroundTransparency = 0.86,
+		Rotation = 0
 	})
 
-	layoutOpenBubbles()
-
-	-- gentle float around its target center (without breaking layout)
-	if e.FloatConn then e.FloatConn:Disconnect() end
-	local t0 = os.clock()
-	e.FloatConn = RunService.RenderStepped:Connect(function()
-		if not e.Open or not card.Visible or not e.TargetCenter then return end
-		local wobY = math.sin((os.clock() - t0) * 1.2) * 2
-		local wobX = math.cos((os.clock() - t0) * 0.9) * 1.2
-		local cx, cy = e.TargetCenter.X + wobX, e.TargetCenter.Y + wobY
-		card.Position = UDim2.new(0, cx, 0, cy)
+	-- Staggered content appearance
+	task.delay(0.15, function()
+		local sheen = card:FindFirstChild("Sheen")
+		if sheen then
+			sheen.BackgroundTransparency = 0
+			tween(sheen, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				BackgroundTransparency = 0.94
+			})
+		end
 	end)
+
+	task.delay(0.25, function()
+		local top = card:FindFirstChild("Top")
+		if top then
+			for _, child in ipairs(top:GetChildren()) do
+				if child:IsA("GuiObject") then
+					child.BackgroundTransparency = 1
+					child.TextTransparency = 1
+					tween(child, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+						BackgroundTransparency = child.BackgroundTransparency == 1 and 0 or child.BackgroundTransparency,
+						TextTransparency = child.TextTransparency == 1 and 0 or child.TextTransparency
+					})
+				end
+			end
+		end
+	end)
+
+	entry.Open = true
+	entry.OpenTick = tick()
+	layoutOpenBubbles()
 end
 
 local function closeBubble(key)
-	local e = Bubbles[key]
-	if not e or not e.Open then return end
-	e.Open = false
-	if e.FloatConn then e.FloatConn:Disconnect(); e.FloatConn = nil end
+	local entry = Bubbles[key]
+	if not entry or not entry.Open then return end
 
-	local card = e.Card
-	local ox, oy = dockCenterPx()
-	tween(card, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+	local card = entry.Card
+	local origin = dockCenterPx()
+
+	-- Enhanced closing animation with spin effect
+	tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+		Position = origin,
 		Size = UDim2.new(0, 0, 0, 0),
-		Position = UDim2.new(0, ox, 0, oy),
 		BackgroundTransparency = 1,
+		Rotation = 180
 	})
-	task.delay(0.24, function()
+
+	task.delay(0.35, function()
 		card.Visible = false
-		e.TargetCenter = nil
-		layoutOpenBubbles()
+		card.Rotation = 0
 	end)
+
+	entry.Open = false
+	layoutOpenBubbles()
 end
 
--- Build buttons + cards
+-- Initialize bubbles
 for _, cfg in ipairs(BubbleConfig) do
 	local btn = mkDockBubbleButton(cfg)
 	BubbleButtons[cfg.Key] = btn
