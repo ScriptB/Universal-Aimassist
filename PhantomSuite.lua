@@ -777,8 +777,8 @@ local function openBubble(key)
 	card.Rotation = 0
 	card.BackgroundTransparency = 1
 
-	local origin = dockCenterPx()
-	card.Position = origin
+	local originX, originY = dockCenterPx()
+	card.Position = UDim2.new(0, originX, 0, originY)
 	card.Size = UDim2.new(0, 0, 0, 0)
 
 	-- Don't set initial position here - let layoutOpenBubbles handle it
@@ -827,11 +827,11 @@ local function closeBubble(key)
 	if not entry or not entry.Open then return end
 
 	local card = entry.Card
-	local origin = dockCenterPx()
+	local originX, originY = dockCenterPx()
 
 	-- Enhanced closing animation with spin effect
 	tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-		Position = origin,
+		Position = UDim2.new(0, originX, 0, originY),
 		Size = UDim2.new(0, 0, 0, 0),
 		BackgroundTransparency = 1,
 		Rotation = 180
