@@ -240,7 +240,7 @@ mkStroke(DockInner, 1, 0.55, Theme.Stroke)
 local DockTitle = Instance.new("TextLabel")
 DockTitle.Name = "Title"
 DockTitle.BackgroundTransparency = 1
-DockTitle.Size = UDim2.new(0, 200, 1, 0) -- REDUCED to prevent overlap
+DockTitle.Size = UDim2.new(0, 180, 1, 0) -- FURTHER REDUCED for spacing
 DockTitle.Position = UDim2.new(0, 16, 0, 0)
 DockTitle.Font = Enum.Font.GothamBold
 DockTitle.TextSize = 18
@@ -253,8 +253,8 @@ DockTitle.Parent = DockInner
 local DockHint = Instance.new("TextLabel")
 DockHint.Name = "Hint"
 DockHint.BackgroundTransparency = 1
-DockHint.Size = UDim2.new(0, 180, 1, 0) -- REDUCED to prevent overlap
-DockHint.Position = UDim2.new(1, -196, 0, 0) -- ADJUSTED for better spacing
+DockHint.Size = UDim2.new(0, 160, 1, 0) -- FURTHER REDUCED for spacing
+DockHint.Position = UDim2.new(1, -176, 0, 0) -- ADJUSTED for better spacing
 DockHint.Font = Enum.Font.GothamMedium
 DockHint.TextSize = 13
 DockHint.TextXAlignment = Enum.TextXAlignment.Right
@@ -346,8 +346,8 @@ local BubbleConfig = {
 local DockTabs = Instance.new("Frame")
 DockTabs.Name = "Tabs"
 DockTabs.BackgroundTransparency = 1
-DockTabs.Size = UDim2.new(0, 260, 1, 0) -- REDUCED to prevent overlap
-DockTabs.Position = UDim2.new(0.5, -78, 0, 0) -- CENTERED properly
+DockTabs.Size = UDim2.new(0, 240, 1, 0) -- OPTIMIZED for exact spacing
+DockTabs.Position = UDim2.new(0.5, -72, 0, 0) -- PERFECTLY CENTERED
 DockTabs.ZIndex = 12
 DockTabs.Parent = DockInner
 
@@ -356,7 +356,7 @@ tabsLayout.FillDirection = Enum.FillDirection.Horizontal
 tabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 tabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 tabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabsLayout.Padding = UDim.new(0, 8) -- REDUCED to fit better
+tabsLayout.Padding = UDim.new(0, 6) -- OPTIMIZED for perfect fit
 tabsLayout.Parent = DockTabs
 
 local function mkDockBubbleButton(cfg)
@@ -436,10 +436,10 @@ local function mkBubbleCard(key, titleText)
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.new(1, -90, 1, 0) -- Adjusted for close button
+	title.Size = UDim2.new(1, -100, 1, 0) -- INCREASED margin for close button
 	title.Position = UDim2.new(0, 10, 0, 0) -- Consistent left margin
 	title.Font = Enum.Font.GothamBold
-	title.TextSize = 16 -- Increased for better readability
+	title.TextSize = 16
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = Theme.Text
 	title.Text = titleText
@@ -452,15 +452,15 @@ local function mkBubbleCard(key, titleText)
 	close.BackgroundColor3 = Theme.Glass
 	close.BackgroundTransparency = 0.88
 	close.BorderSizePixel = 0
-	close.Size = UDim2.new(0, 36, 0, 36) -- Increased for better touch target
-	close.Position = UDim2.new(1, -46, 0, 7) -- Better positioning
+	close.Size = UDim2.new(0, 36, 0, 36)
+	close.Position = UDim2.new(1, -50, 0, 7) -- INCREASED margin for better spacing
 	close.Text = "↩"
 	close.Font = Enum.Font.GothamBold
-	close.TextSize = 16 -- Increased for visibility
+	close.TextSize = 16
 	close.TextColor3 = Theme.Text
 	close.ZIndex = 32
 	close.Parent = top
-	mkCorner(close, 16) -- Proportional corner radius
+	mkCorner(close, 16)
 	mkStroke(close, 1, 0.55, Theme.Stroke)
 
 	local content = Instance.new("Frame")
@@ -473,7 +473,7 @@ local function mkBubbleCard(key, titleText)
 
 	local list = Instance.new("UIListLayout")
 	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Padding = UDim.new(0, 10) -- Increased spacing for better readability
+	list.Padding = UDim.new(0, 8) -- OPTIMIZED spacing for better fit
 	list.Parent = content
 
 	return card, content, close
@@ -519,10 +519,10 @@ local function mkToggleRow(parent, name, get, set)
 
 	local txt = Instance.new("TextLabel")
 	txt.BackgroundTransparency = 1
-	txt.Size = UDim2.new(1, -90, 1, 0) -- Adjusted for chip size
-	txt.Position = UDim2.new(0, 14, 0, 0) -- Increased left margin
+	txt.Size = UDim2.new(1, -100, 1, 0) -- INCREASED margin for chip
+	txt.Position = UDim2.new(0, 14, 0, 0) -- Consistent left margin
 	txt.Font = Enum.Font.GothamMedium
-	txt.TextSize = 14 -- Increased for readability
+	txt.TextSize = 14
 	txt.TextXAlignment = Enum.TextXAlignment.Left
 	txt.TextColor3 = Theme.Text
 	txt.Text = name
@@ -530,15 +530,15 @@ local function mkToggleRow(parent, name, get, set)
 	txt.Parent = row
 
 	local chip = Instance.new("Frame")
-	chip.Size = UDim2.new(0, 64, 0, 28) -- Increased for better touch targets
-	chip.Position = UDim2.new(1, -76, 0.5, 0) -- Better positioning
+	chip.Size = UDim2.new(0, 64, 0, 28)
+	chip.Position = UDim2.new(1, -82, 0.5, 0) -- INCREASED margin for better spacing
 	chip.AnchorPoint = Vector2.new(0, 0.5)
 	chip.BackgroundColor3 = Theme.Accent
 	chip.BackgroundTransparency = 0.70
 	chip.BorderSizePixel = 0
 	chip.ZIndex = 34
 	chip.Parent = row
-	mkCorner(chip, 14) -- Increased corner radius proportionally
+	mkCorner(chip, 14)
 	mkStroke(chip, 1, 0.55, Theme.Stroke)
 
 	local chipText = Instance.new("TextLabel")
