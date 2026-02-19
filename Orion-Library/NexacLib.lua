@@ -165,12 +165,15 @@ local function AddThemeObject(obj, typeName)
 end
 
 local function SetTheme()
+	local currentTheme = NexacLib.Themes[NexacLib.SelectedTheme]
+	if not currentTheme then return end
+	
 	for typeName, list in pairs(NexacLib.ThemeObjects) do
 		for _, obj in pairs(list) do
 			pcall(function()
 				local prop = ReturnProperty(obj)
-				if prop then
-					obj[prop] = NexacLib.Themes[NexacLib.SelectedTheme][typeName]
+				if prop and currentTheme[typeName] then
+					obj[prop] = currentTheme[typeName]
 				end
 			end)
 		end
@@ -276,7 +279,16 @@ local function EnsureStroke(frame, color, thickness, transparency)
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.LineJoinMode = Enum.LineJoinMode.Round
 	s.Thickness = thickness or UI.StrokeThickness
-	s.Color = color or NexacLib.Themes[NexacLib.SelectedTheme].Stroke
+	
+	-- Safe theme access to prevent blank UI
+	local defaultColor = Color3.fromRGB(64, 66, 80)
+	local currentTheme = NexacLib.Themes[NexacLib.SelectedTheme]
+	if currentTheme and currentTheme.Stroke then
+		s.Color = color or currentTheme.Stroke
+	else
+		s.Color = color or defaultColor
+	end
+	
 	s.Transparency = transparency == nil and UI.StrokeTransparency or transparency
 	s.Parent = frame
 	return s
@@ -613,14 +625,14 @@ function NexacLib:MakeWindow(cfg)
 		end
 	end
 
-	local t = NexacLib.Themes[NexacLib.SelectedTheme]
+	local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
 
 	local FirstTab = true
 	local Minimized = false
 	local UIHidden = false
 
 	-- Main window base
-	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", t.Main, 0, UI.Corner), {
+	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", t.Main or Color3.fromRGB(14, 15, 18), 0, UI.Corner), {
 		Parent = Nexac,
 		Position = UDim2.new(0.5, -360, 0.5, -210),
 		Size = UDim2.new(0, 720, 0, 420),

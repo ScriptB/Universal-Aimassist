@@ -1112,20 +1112,7 @@ local function createMainUI(lockedFeatures, safetyIssues)
 	-- Initialize NexacLib UI
 	NexacLib:Init()
 	
-	-- Create NexacLib window with enhanced modern features
-	local Window = NexacLib:MakeWindow({
-		Name = "⚡ Phantom Suite",
-		HidePremium = false,
-		SaveConfig = true,
-		ConfigFolder = "PhantomSuite",
-		IntroEnabled = true,
-		IntroText = "⚡ Phantom Suite v7.7\nAdvanced Gaming Tools",
-		IntroIcon = "rbxassetid://7733658168",
-		ShowIcon = true,
-		Icon = "rbxassetid://7733658168"
-	})
-	
-	-- Apply custom Phantom theme to NexacLib
+	-- Apply custom Phantom theme to NexacLib BEFORE creating window
 	local PhantomTheme = {
 		Main = Color3.fromRGB(15, 15, 20),
 		Second = Color3.fromRGB(25, 25, 35),
@@ -1144,12 +1131,18 @@ local function createMainUI(lockedFeatures, safetyIssues)
 	NexacLib.Themes.Phantom = PhantomTheme
 	NexacLib.SelectedTheme = "Phantom"
 	
-	-- Apply the theme immediately to ensure proper rendering
-	pcall(function()
-		if NexacLib.SetTheme then
-			NexacLib:SetTheme("Phantom")
-		end
-	end)
+	-- Create NexacLib window with enhanced modern features
+	local Window = NexacLib:MakeWindow({
+		Name = "⚡ Phantom Suite",
+		HidePremium = false,
+		SaveConfig = true,
+		ConfigFolder = "PhantomSuite",
+		IntroEnabled = true,
+		IntroText = "⚡ Phantom Suite v7.7\nAdvanced Gaming Tools",
+		IntroIcon = "rbxassetid://7733658168",
+		ShowIcon = true,
+		Icon = "rbxassetid://7733658168"
+	})
 	
 	-- Apply custom theme through Nexac's built-in methods
 	NexacLib:MakeNotification({
