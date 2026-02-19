@@ -163,6 +163,17 @@ local function MakeElement(name, ...)
 end
 
 local function SetProps(obj, props)
+	-- ZIndex fix: if Parent is assigned and no explicit ZIndex was provided,
+	-- place the object above its parent so it renders correctly.
+	local parent = props and props.Parent
+	local hasExplicitZ = props and props.ZIndex ~= nil
+	if parent and not hasExplicitZ and typeof(parent) == "Instance" then
+		pcall(function()
+			if obj:IsA("GuiObject") and parent:IsA("GuiObject") then
+				obj.ZIndex = parent.ZIndex + 1
+			end
+		end)
+	end
 	for k, v in next, props do
 		obj[k] = v
 	end
@@ -172,6 +183,13 @@ end
 local function SetChildren(obj, children)
 	for _, ch in next, children do
 		ch.Parent = obj
+		pcall(function()
+			if ch:IsA("GuiObject") and obj:IsA("GuiObject") then
+				if ch.ZIndex <= obj.ZIndex then
+					ch.ZIndex = obj.ZIndex + 1
+				end
+			end
+		end)
 	end
 	return obj
 end
