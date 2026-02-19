@@ -209,41 +209,41 @@ local function spawnParticles(count)
 	end
 end
 
--- Dock (bottom bar)
+-- Dock (bottom bar) - PROPORTIONED CORRECTLY
 local Dock = Instance.new("Frame")
 Dock.Name = "Dock"
 Dock.AnchorPoint = Vector2.new(0.5, 1)
-Dock.Size = UDim2.new(0, 520, 0, 72)
-Dock.Position = UDim2.new(0.5, 0, 1, -20)
+Dock.Size = UDim2.new(0, 560, 0, 80) -- Increased for better proportions
+Dock.Position = UDim2.new(0.5, 0, 1, -24) -- Better bottom margin
 Dock.BackgroundColor3 = Theme.Glass
 Dock.BackgroundTransparency = 0.82
 Dock.BorderSizePixel = 0
 Dock.ZIndex = 10
 Dock.Parent = Root
-mkCorner(Dock, 22)
+mkCorner(Dock, 24) -- Increased corner radius for better proportions
 mkStroke(Dock, 2, 0.35, Theme.Stroke)
 mkGradient(Dock, 90, Theme.Glass, Theme.Glass2, Theme.Glass)
-mkShadow(Dock, 22, 0.62)
+mkShadow(Dock, 24, 0.62)
 
 local DockInner = Instance.new("Frame")
 DockInner.Name = "Inner"
 DockInner.BackgroundColor3 = Theme.Glass
 DockInner.BackgroundTransparency = 0.90
 DockInner.BorderSizePixel = 0
-DockInner.Size = UDim2.new(1, -16, 1, -16)
-DockInner.Position = UDim2.new(0, 8, 0, 8)
+DockInner.Size = UDim2.new(1, -20, 1, -20) -- Consistent 10px margins
+DockInner.Position = UDim2.new(0, 10, 0, 10)
 DockInner.ZIndex = 11
 DockInner.Parent = Dock
-mkCorner(DockInner, 18)
+mkCorner(DockInner, 20) -- Proportional to outer radius
 mkStroke(DockInner, 1, 0.55, Theme.Stroke)
 
 local DockTitle = Instance.new("TextLabel")
 DockTitle.Name = "Title"
 DockTitle.BackgroundTransparency = 1
-DockTitle.Size = UDim2.new(0, 220, 1, 0)
-DockTitle.Position = UDim2.new(0, 14, 0, 0)
+DockTitle.Size = UDim2.new(0, 240, 1, 0) -- Increased for better text fit
+DockTitle.Position = UDim2.new(0, 16, 0, 0) -- Consistent left margin
 DockTitle.Font = Enum.Font.GothamBold
-DockTitle.TextSize = 16
+DockTitle.TextSize = 18 -- Increased for better readability
 DockTitle.TextXAlignment = Enum.TextXAlignment.Left
 DockTitle.TextColor3 = Theme.Text
 DockTitle.Text = "🫧 Phantom Suite"
@@ -253,10 +253,10 @@ DockTitle.Parent = DockInner
 local DockHint = Instance.new("TextLabel")
 DockHint.Name = "Hint"
 DockHint.BackgroundTransparency = 1
-DockHint.Size = UDim2.new(0, 240, 1, 0)
-DockHint.Position = UDim2.new(1, -254, 0, 0)
+DockHint.Size = UDim2.new(0, 200, 1, 0) -- Optimized size
+DockHint.Position = UDim2.new(1, -216, 0, 0) -- Consistent right margin
 DockHint.Font = Enum.Font.GothamMedium
-DockHint.TextSize = 12
+DockHint.TextSize = 13 -- Increased for readability
 DockHint.TextXAlignment = Enum.TextXAlignment.Right
 DockHint.TextColor3 = Theme.Text2
 DockHint.Text = "RightCtrl • bubbles"
@@ -270,7 +270,7 @@ local function snapDock(mode)
 	DockSnap = mode
 	local vp = workspace.CurrentCamera.ViewportSize
 	local y = 1
-	local yOff = -20
+	local yOff = -24 -- UPDATED FOR NEW DOCK SIZE
 	local targetX
 	if mode == "Left" then
 		targetX = UDim2.new(0, 20 + Dock.AbsoluteSize.X/2, y, yOff)
@@ -346,8 +346,8 @@ local BubbleConfig = {
 local DockTabs = Instance.new("Frame")
 DockTabs.Name = "Tabs"
 DockTabs.BackgroundTransparency = 1
-DockTabs.Size = UDim2.new(0, 280, 1, 0)
-DockTabs.Position = UDim2.new(0.5, -80, 0, 0)
+DockTabs.Size = UDim2.new(0, 300, 1, 0) -- Increased for better button spacing
+DockTabs.Position = UDim2.new(0.5, -90, 0, 0) -- Centered properly
 DockTabs.ZIndex = 12
 DockTabs.Parent = DockInner
 
@@ -356,7 +356,7 @@ tabsLayout.FillDirection = Enum.FillDirection.Horizontal
 tabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 tabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 tabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabsLayout.Padding = UDim.new(0, 10)
+tabsLayout.Padding = UDim.new(0, 12) -- Increased padding for better spacing
 tabsLayout.Parent = DockTabs
 
 local function mkDockBubbleButton(cfg)
@@ -366,11 +366,11 @@ local function mkDockBubbleButton(cfg)
 	btn.BackgroundColor3 = Theme.Glass
 	btn.BackgroundTransparency = 0.86
 	btn.BorderSizePixel = 0
-	btn.Size = UDim2.new(0, 44, 0, 44)
+	btn.Size = UDim2.new(0, 48, 0, 48) -- Increased for better touch targets
 	btn.Text = ""
 	btn.ZIndex = 12
 	btn.Parent = DockTabs
-	mkCorner(btn, 16)
+	mkCorner(btn, 18) -- Increased corner radius proportionally
 	mkStroke(btn, 1, 0.55, Theme.Stroke)
 	mkGradient(btn, 55, Theme.Glass, Theme.Glass2, Theme.Glass)
 
@@ -378,7 +378,7 @@ local function mkDockBubbleButton(cfg)
 	ico.BackgroundTransparency = 1
 	ico.Size = UDim2.new(1, 0, 1, 0)
 	ico.Font = Enum.Font.GothamBold
-	ico.TextSize = 16
+	ico.TextSize = 18 -- Increased for better visibility
 	ico.TextColor3 = Theme.Text
 	ico.Text = cfg.Icon
 	ico.ZIndex = 13
@@ -409,37 +409,37 @@ local function mkDockBubbleButton(cfg)
 	return btn
 end
 
--- Bubble card creation
+-- Bubble card creation - PROPORTIONED CORRECTLY
 local function mkBubbleCard(key, titleText)
 	local card = Instance.new("Frame")
 	card.Name = "Bubble_"..key
 	card.AnchorPoint = Vector2.new(0.5, 1)
-	card.Size = UDim2.new(0, 280, 0, 220)
+	card.Size = UDim2.new(0, 320, 0, 260) -- Increased for better content space
 	card.BackgroundColor3 = Theme.Glass
 	card.BackgroundTransparency = 0.84
 	card.BorderSizePixel = 0
 	card.ZIndex = 30
 	card.Visible = false
 	card.Parent = Root
-	mkCorner(card, 26)
+	mkCorner(card, 30) -- Increased corner radius proportionally
 	mkStroke(card, 2, 0.30, Theme.Stroke)
 	mkGradient(card, 90, Theme.Glass, Theme.Glass2, Theme.Glass)
-	mkShadow(card, 26, 0.58)
+	mkShadow(card, 30, 0.58)
 
 	local top = Instance.new("Frame")
 	top.Name = "Top"
 	top.BackgroundTransparency = 1
-	top.Size = UDim2.new(1, -18, 0, 44)
-	top.Position = UDim2.new(0, 9, 0, 8)
+	top.Size = UDim2.new(1, -20, 0, 50) -- Increased header height
+	top.Position = UDim2.new(0, 10, 0, 10) -- Consistent margins
 	top.ZIndex = 31
 	top.Parent = card
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.new(1, -84, 1, 0)
-	title.Position = UDim2.new(0, 8, 0, 0)
+	title.Size = UDim2.new(1, -90, 1, 0) -- Adjusted for close button
+	title.Position = UDim2.new(0, 10, 0, 0) -- Consistent left margin
 	title.Font = Enum.Font.GothamBold
-	title.TextSize = 14
+	title.TextSize = 16 -- Increased for better readability
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = Theme.Text
 	title.Text = titleText
@@ -452,28 +452,28 @@ local function mkBubbleCard(key, titleText)
 	close.BackgroundColor3 = Theme.Glass
 	close.BackgroundTransparency = 0.88
 	close.BorderSizePixel = 0
-	close.Size = UDim2.new(0, 34, 0, 34)
-	close.Position = UDim2.new(1, -42, 0, 5)
+	close.Size = UDim2.new(0, 36, 0, 36) -- Increased for better touch target
+	close.Position = UDim2.new(1, -46, 0, 7) -- Better positioning
 	close.Text = "↩"
 	close.Font = Enum.Font.GothamBold
-	close.TextSize = 14
+	close.TextSize = 16 -- Increased for visibility
 	close.TextColor3 = Theme.Text
 	close.ZIndex = 32
 	close.Parent = top
-	mkCorner(close, 14)
+	mkCorner(close, 16) -- Proportional corner radius
 	mkStroke(close, 1, 0.55, Theme.Stroke)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.BackgroundTransparency = 1
-	content.Size = UDim2.new(1, -18, 1, -62)
-	content.Position = UDim2.new(0, 9, 0, 52)
+	content.Size = UDim2.new(1, -20, 1, -70) -- Adjusted for larger header
+	content.Position = UDim2.new(0, 10, 0, 60) -- Better positioning
 	content.ZIndex = 31
 	content.Parent = card
 
 	local list = Instance.new("UIListLayout")
 	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Padding = UDim.new(0, 8)
+	list.Padding = UDim.new(0, 10) -- Increased spacing for better readability
 	list.Parent = content
 
 	return card, content, close
@@ -484,18 +484,18 @@ local function mkPill(parent, text, color)
 	pill.BackgroundColor3 = color or Theme.Glass2
 	pill.BackgroundTransparency = 0.82
 	pill.BorderSizePixel = 0
-	pill.Size = UDim2.new(1, 0, 0, 36)
+	pill.Size = UDim2.new(1, 0, 0, 40) -- Increased height for better touch targets
 	pill.ZIndex = 33
 	pill.Parent = parent
-	mkCorner(pill, 16)
+	mkCorner(pill, 18) -- Increased corner radius proportionally
 	mkStroke(pill, 1, 0.60, Theme.Stroke)
 
 	local lbl = Instance.new("TextLabel")
 	lbl.BackgroundTransparency = 1
-	lbl.Size = UDim2.new(1, -16, 1, 0)
-	lbl.Position = UDim2.new(0, 10, 0, 0)
+	lbl.Size = UDim2.new(1, -20, 1, 0) -- Consistent margins
+	lbl.Position = UDim2.new(0, 12, 0, 0) -- Increased left margin
 	lbl.Font = Enum.Font.GothamMedium
-	lbl.TextSize = 13
+	lbl.TextSize = 14 -- Increased for readability
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.TextColor3 = Theme.Text
 	lbl.Text = text
@@ -510,19 +510,19 @@ local function mkToggleRow(parent, name, get, set)
 	row.BackgroundColor3 = Theme.Glass2
 	row.BackgroundTransparency = 0.84
 	row.BorderSizePixel = 0
-	row.Size = UDim2.new(1, 0, 0, 40)
+	row.Size = UDim2.new(1, 0, 0, 44) -- Increased height for better touch targets
 	row.Text = ""
 	row.ZIndex = 33
 	row.Parent = parent
-	mkCorner(row, 16)
+	mkCorner(row, 18) -- Increased corner radius proportionally
 	mkStroke(row, 1, 0.60, Theme.Stroke)
 
 	local txt = Instance.new("TextLabel")
 	txt.BackgroundTransparency = 1
-	txt.Size = UDim2.new(1, -86, 1, 0)
-	txt.Position = UDim2.new(0, 12, 0, 0)
+	txt.Size = UDim2.new(1, -90, 1, 0) -- Adjusted for chip size
+	txt.Position = UDim2.new(0, 14, 0, 0) -- Increased left margin
 	txt.Font = Enum.Font.GothamMedium
-	txt.TextSize = 13
+	txt.TextSize = 14 -- Increased for readability
 	txt.TextXAlignment = Enum.TextXAlignment.Left
 	txt.TextColor3 = Theme.Text
 	txt.Text = name
@@ -530,22 +530,22 @@ local function mkToggleRow(parent, name, get, set)
 	txt.Parent = row
 
 	local chip = Instance.new("Frame")
-	chip.Size = UDim2.new(0, 60, 0, 26)
-	chip.Position = UDim2.new(1, -72, 0.5, 0)
+	chip.Size = UDim2.new(0, 64, 0, 28) -- Increased for better touch targets
+	chip.Position = UDim2.new(1, -76, 0.5, 0) -- Better positioning
 	chip.AnchorPoint = Vector2.new(0, 0.5)
 	chip.BackgroundColor3 = Theme.Accent
 	chip.BackgroundTransparency = 0.70
 	chip.BorderSizePixel = 0
 	chip.ZIndex = 34
 	chip.Parent = row
-	mkCorner(chip, 12)
+	mkCorner(chip, 14) -- Increased corner radius proportionally
 	mkStroke(chip, 1, 0.55, Theme.Stroke)
 
 	local chipText = Instance.new("TextLabel")
 	chipText.BackgroundTransparency = 1
 	chipText.Size = UDim2.new(1, 0, 1, 0)
 	chipText.Font = Enum.Font.GothamBold
-	chipText.TextSize = 12
+	chipText.TextSize = 13 -- Increased for visibility
 	chipText.TextColor3 = Color3.fromRGB(255, 255, 255)
 	chipText.ZIndex = 35
 	chipText.Parent = chip
@@ -644,10 +644,10 @@ do
 
 		local card, content, closeBtn = mkBubbleCard(cfg.Key, cfg.Icon.."  "..cfg.Label)
 
-		-- size per type
-		local s = (cfg.Key == "Dashboard") and UDim2.new(0, 320, 0, 240)
-			or (cfg.Key == "Settings") and UDim2.new(0, 260, 0, 210)
-			or UDim2.new(0, 280, 0, 220)
+		-- size per type - UPDATED FOR NEW CARD DIMENSIONS
+		local s = (cfg.Key == "Dashboard") and UDim2.new(0, 360, 0, 280)
+			or (cfg.Key == "Settings") and UDim2.new(0, 300, 0, 240)
+			or UDim2.new(0, 320, 0, 260)
 
 		Bubbles[cfg.Key] = {
 			Key = cfg.Key,
@@ -725,10 +725,10 @@ local function setUI(on)
 			Size = 14
 		})
 
-		-- dock intro
-		Dock.Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, 20)
+		-- dock intro - UPDATED FOR NEW DOCK SIZE
+		Dock.Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, 24)
 		tween(Dock, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-			Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, -20)
+			Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, -24)
 		})
 	else
 		-- close any open bubble
@@ -743,7 +743,7 @@ local function setUI(on)
 			Size = 0
 		})
 		tween(Dock, TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-			Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, 20)
+			Position = UDim2.new(Dock.Position.X.Scale, Dock.Position.X.Offset, 1, 24)
 		})
 
 		task.delay(0.24, function()
