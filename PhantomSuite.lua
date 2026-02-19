@@ -2314,10 +2314,30 @@ task.spawn(function()
 			-- Aimbot System
 			if aimbotEnabled or blatantEnabled then
 				if blatantEnabled then
-					-- Blatant: always active, snap to closest visible enemy (no aim key required)
-					currentTarget = getTarget()
+					-- Blatant: lock onto closest visible enemy and stick until dead
+					if not currentTarget then
+						-- Find new target only if we don't have one
+						currentTarget = getTarget()
+					end
+					
 					if currentTarget then
-						aimAt(currentTarget)
+						-- Check if current target is still valid
+						local character = currentTarget.Character
+						local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+						
+						if not humanoid or humanoid.Health <= 0 then
+							-- Target is dead, find new one
+							currentTarget = getTarget()
+						else
+							-- Check if target is still visible and not behind wall
+							if wallCheck and checkWall(character) then
+								-- Target behind wall, find new visible target
+								currentTarget = getTarget()
+							else
+								-- Target is valid, aim at them
+								aimAt(currentTarget)
+							end
+						end
 					end
 				elseif aiming then
 					-- Normal aimbot requires aiming key and aimbotEnabled
