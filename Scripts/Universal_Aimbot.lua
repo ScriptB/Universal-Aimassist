@@ -199,26 +199,6 @@ local loadingState = {
 }
 
 -- ===================================
--- LOADING UI CREATION
--- ===================================
-
-local function createLoadingUI()
-    local LoadingWindow = Bracket:CreateWindow({
-        WindowName = "Universal Aimbot - Loading",
-        Color = Color3.fromRGB(85, 170, 255)
-    }, game:GetService("CoreGui"))
-    
-    local LoadingTab = LoadingWindow:CreateTab("🔍 Verification")
-    local LoadingSection = LoadingTab:CreateSection("UNC Compatibility Check")
-    
-    local statusLabel = LoadingSection:CreateLabel("Status: Initializing...")
-    local progressLabel = LoadingSection:CreateLabel("Progress: 0%")
-    local resultsLabel = LoadingSection:CreateLabel("Results: Pending...")
-    
-    return LoadingWindow, statusLabel, progressLabel, resultsLabel
-end
-
--- ===================================
 -- UNC VERIFICATION FUNCTIONS
 -- ===================================
 
