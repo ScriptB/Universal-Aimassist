@@ -121,8 +121,8 @@ local function createBackgroundOverlay()
     return overlay
 end
 
--- Create glass bubble effect
-local function createGlassBubble(size, position, zIndex)
+-- Create organic glass bubble effect
+local function createGlassBubble(size, position, zIndex, bubbleShape)
     local bubble = Instance.new("Frame")
     bubble.Name = "GlassBubble"
     bubble.Size = size
@@ -132,50 +132,78 @@ local function createGlassBubble(size, position, zIndex)
     bubble.BorderSizePixel = 0
     bubble.ZIndex = zIndex
     
-    -- Glass gradient effect
+    -- Dynamic corner radius based on bubble shape
+    local cornerRadius = bubbleShape == "large" and 40 or (bubbleShape == "medium" and 35 or 30)
+    
+    -- Glass gradient effect with more organic colors
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240, 248, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 235, 255))
+        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(245, 250, 255)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(230, 240, 250)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(215, 230, 245))
     }
-    gradient.Rotation = 45
+    gradient.Rotation = math.random(30, 60) -- Random rotation for organic feel
     gradient.Parent = bubble
     
-    -- Glass border
+    -- Glass border with varying thickness
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(200, 220, 255)
-    stroke.Thickness = 2
-    stroke.Transparency = 0.3
+    stroke.Thickness = bubbleShape == "large" and 3 or 2
+    stroke.Transparency = 0.25
     stroke.Parent = bubble
     
-    -- Corner rounding for bubble shape
+    -- Organic corner rounding (not perfect circles)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 20)
+    corner.CornerRadius = UDim.new(0, cornerRadius)
     corner.Parent = bubble
     
-    -- Inner glow effect
+    -- Inner glow effect with offset for bubble appearance
     local innerGlow = Instance.new("Frame")
     innerGlow.Name = "InnerGlow"
-    innerGlow.Size = UDim2.new(0.9, 0, 0.9, 0)
-    innerGlow.Position = UDim2.new(0.05, 0, 0.05, 0)
+    innerGlow.Size = UDim2.new(0.85, 0, 0.85, 0)
+    innerGlow.Position = UDim2.new(0.075, 0, 0.075, 0)
     innerGlow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    innerGlow.BackgroundTransparency = 0.9
+    innerGlow.BackgroundTransparency = 0.92
     innerGlow.BorderSizePixel = 0
     innerGlow.ZIndex = bubble.ZIndex + 1
     innerGlow.Parent = bubble
     
     local innerCorner = Instance.new("UICorner")
-    innerCorner.CornerRadius = UDim.new(0, 18)
+    innerCorner.CornerRadius = UDim.new(0, cornerRadius - 5)
     innerCorner.Parent = innerGlow
     
     local innerGradient = Instance.new("UIGradient")
     innerGradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 220, 255))
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240, 248, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 235, 255))
     }
-    innerGradient.Rotation = -45
+    innerGradient.Rotation = -gradient.Rotation
     innerGradient.Parent = innerGlow
+    
+    -- Add bubble highlight for realism
+    local highlight = Instance.new("Frame")
+    highlight.Name = "Highlight"
+    highlight.Size = UDim2.new(0.3, 0, 0.4, 0)
+    highlight.Position = UDim2.new(0.15, 0, 0.1, 0)
+    highlight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    highlight.BackgroundTransparency = 0.8
+    highlight.BorderSizePixel = 0
+    highlight.ZIndex = bubble.ZIndex + 2
+    highlight.Parent = bubble
+    
+    local highlightCorner = Instance.new("UICorner")
+    highlightCorner.CornerRadius = UDim.new(0, cornerRadius * 0.8)
+    highlightCorner.Parent = highlight
+    
+    local highlightGradient = Instance.new("UIGradient")
+    highlightGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 248, 255))
+    }
+    highlightGradient.Rotation = 45
+    highlightGradient.Parent = highlight
     
     return bubble
 end
@@ -220,54 +248,59 @@ local function createBubbleContent(bubble, bubbleType, size)
     return content
 end
 
--- Create all bubbles
+-- Create all bubbles focused near top-left with organic shapes
 local function createBubbles()
     local overlay = BubbleGUI.BackgroundOverlay
     
-    -- Dashboard Bubble (Top Left - Largest)
+    -- Dashboard Bubble (Top Left - Largest, organic shape)
     local dashboardBubble = createGlassBubble(
-        UDim2.new(0, 280, 0, 350),
-        UDim2.new(0, 30, 0, 30),
-        10
+        UDim2.new(0, 320, 0, 280),
+        UDim2.new(0, 20, 0, 20),
+        10,
+        "large"
     )
     dashboardBubble.Parent = overlay
-    local dashboardContent = createBubbleContent(dashboardBubble, "🎯 Dashboard", UDim2.new(0, 280, 0, 350))
+    local dashboardContent = createBubbleContent(dashboardBubble, "🎯 Dashboard", UDim2.new(0, 320, 0, 280))
     
-    -- Aimbot Bubble (Left Middle)
+    -- Aimbot Bubble (Top-Middle, medium organic)
     local aimbotBubble = createGlassBubble(
-        UDim2.new(0, 200, 0, 200),
-        UDim2.new(0, 50, 0, 400),
-        11
+        UDim2.new(0, 180, 0, 180),
+        UDim2.new(0, 360, 0, 40),
+        11,
+        "medium"
     )
     aimbotBubble.Parent = overlay
-    local aimbotContent = createBubbleContent(aimbotBubble, "🎯 Aimbot", UDim2.new(0, 200, 0, 200))
+    local aimbotContent = createBubbleContent(aimbotBubble, "🎯 Aimbot", UDim2.new(0, 180, 0, 180))
     
-    -- ESP Bubble (Left Middle-Bottom)
+    -- ESP Bubble (Top-Right, smaller organic)
     local espBubble = createGlassBubble(
-        UDim2.new(0, 200, 0, 200),
-        UDim2.new(0, 50, 0, 620),
-        12
+        UDim2.new(0, 160, 0, 160),
+        UDim2.new(0, 560, 0, 60),
+        12,
+        "small"
     )
     espBubble.Parent = overlay
-    local espContent = createBubbleContent(espBubble, "👁️ ESP", UDim2.new(0, 200, 0, 200))
+    local espContent = createBubbleContent(espBubble, "👁️ ESP", UDim2.new(0, 160, 0, 160))
     
-    -- Movement Bubble (Left Bottom)
+    -- Movement Bubble (Middle-Left, organic)
     local movementBubble = createGlassBubble(
-        UDim2.new(0, 200, 0, 200),
-        UDim2.new(0, 50, 0, 840),
-        13
+        UDim2.new(0, 170, 0, 170),
+        UDim2.new(0, 40, 0, 320),
+        13,
+        "medium"
     )
     movementBubble.Parent = overlay
-    local movementContent = createBubbleContent(movementBubble, "🚀 Movement", UDim2.new(0, 200, 0, 200))
+    local movementContent = createBubbleContent(movementBubble, "🚀 Movement", UDim2.new(0, 170, 0, 170))
     
-    -- Settings Bubble (Left Bottom-Right)
+    -- Settings Bubble (Middle-Right, small organic)
     local settingsBubble = createGlassBubble(
-        UDim2.new(0, 200, 0, 200),
-        UDim2.new(0, 270, 0, 840),
-        14
+        UDim2.new(0, 150, 0, 150),
+        UDim2.new(0, 580, 0, 340),
+        14,
+        "small"
     )
     settingsBubble.Parent = overlay
-    local settingsContent = createBubbleContent(settingsBubble, "⚙️ Settings", UDim2.new(0, 200, 0, 200))
+    local settingsContent = createBubbleContent(settingsBubble, "⚙️ Settings", UDim2.new(0, 150, 0, 150))
     
     -- Store bubbles
     BubbleGUI.Bubbles = {
@@ -365,7 +398,7 @@ local function populateBubbles()
     end)
 end
 
--- Animate bubbles appearing
+-- Animate organic bubbles appearing
 local function animateBubblesIn()
     local blur = BubbleGUI.BlurEffect
     local background = BubbleGUI.BackgroundFrame
@@ -381,14 +414,22 @@ local function animateBubblesIn()
         blurTween:Play()
     end
     
-    -- Animate each bubble with staggered timing
+    -- Animate each bubble with staggered timing and organic movement
     local bubbleOrder = {
         "Dashboard", "Aimbot", "ESP", "Movement", "Settings"
     }
     
+    local targetSizes = {
+        Dashboard = UDim2.new(0, 320, 0, 280),
+        Aimbot = UDim2.new(0, 180, 0, 180),
+        ESP = UDim2.new(0, 160, 0, 160),
+        Movement = UDim2.new(0, 170, 0, 170),
+        Settings = UDim2.new(0, 150, 0, 150)
+    }
+    
     for i, bubbleName in ipairs(bubbleOrder) do
         local bubble = BubbleGUI.Bubbles[bubbleName].Frame
-        local delay = (i - 1) * 0.1
+        local delay = (i - 1) * 0.08 -- Slightly faster stagger
         
         -- Start with bubbles scaled down and transparent
         bubble.Size = UDim2.new(0, 0, 0, 0)
@@ -396,21 +437,29 @@ local function animateBubblesIn()
         
         task.wait(delay)
         
-        -- Scale and fade in
-        local targetSize = bubbleName == "Dashboard" and UDim2.new(0, 280, 0, 350) or UDim2.new(0, 200, 0, 200)
-        
-        local scaleTween = TweenService:Create(bubble, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        -- Organic scale and fade in with slight wobble
+        local targetSize = targetSizes[bubbleName]
+        local scaleTween = TweenService:Create(bubble, TweenInfo.new(0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
             Size = targetSize,
             BackgroundTransparency = 0.85
         })
         scaleTween:Play()
         
-        -- Add floating animation
-        local floatTween = TweenService:Create(bubble, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-            Position = bubble.Position + UDim2.new(0, 0, 0, -5)
+        -- Add organic floating animation with different speeds
+        local floatSpeed = 2 + (i * 0.3) -- Different float speeds for organic feel
+        local floatAmount = 3 + math.random(-1, 2) -- Random float amounts
+        local floatTween = TweenService:Create(bubble, TweenInfo.new(floatSpeed, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+            Position = bubble.Position + UDim2.new(0, 0, 0, -floatAmount)
         })
-        task.wait(0.4)
+        task.wait(0.5)
         floatTween:Play()
+        
+        -- Add subtle rotation for organic movement
+        local rotationTween = TweenService:Create(bubble, TweenInfo.new(4 + math.random(1, 2), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+            Rotation = math.random(-2, 2)
+        })
+        task.wait(0.6)
+        rotationTween:Play()
     end
 end
 
