@@ -348,13 +348,14 @@ local function ApplyCard(frame, opts)
 	frame.BackgroundTransparency = opts.transparency == nil and UI.SubCardTransparency or opts.transparency
 
 	if opts.gradient ~= false then
-		local t = NexacLib.Themes[NexacLib.SelectedTheme]
+		local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
+		local secondColor = t.Second or Color3.fromRGB(22, 23, 28)
 		local top = Color3.fromRGB(
-			math.clamp(t.Second.R * 255 + 10, 0, 255),
-			math.clamp(t.Second.G * 255 + 10, 0, 255),
-			math.clamp(t.Second.B * 255 + 14, 0, 255)
+			math.clamp(secondColor.R * 255 + 10, 0, 255),
+			math.clamp(secondColor.G * 255 + 10, 0, 255),
+			math.clamp(secondColor.B * 255 + 14, 0, 255)
 		)
-		EnsureGradient(frame, 90, top, t.Second)
+		EnsureGradient(frame, 90, top, secondColor)
 	end
 
 	if opts.shadow then
@@ -905,12 +906,14 @@ function NexacLib:MakeWindow(cfg)
 		tabCfg.Icon = tabCfg.Icon or ""
 		tabCfg.PremiumOnly = tabCfg.PremiumOnly or false
 
+		local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
+
 		local TabHit = SetProps(MakeElement("Button"), {
 			Size = UDim2.new(1, 0, 0, 40),
 			Parent = TabHolder
 		})
 
-		local TabCard = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Second, 0, 10), {
+		local TabCard = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Second or Color3.fromRGB(22, 23, 28), 0, 10), {
 			Size = UDim2.new(1, 0, 1, 0),
 			Parent = TabHit,
 			BackgroundTransparency = 0.10
@@ -940,7 +943,7 @@ function NexacLib:MakeWindow(cfg)
 
 		ApplyHitEffects(TabHit, TabCard, {accentStroke = true})
 
-		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", t.Divider, 6), {
+		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", t.Divider or Color3.fromRGB(46, 48, 60), 6), {
 			Size = UDim2.new(1, 0, 1, 0),
 			Parent = ContentHost,
 			Visible = false,
@@ -961,7 +964,7 @@ function NexacLib:MakeWindow(cfg)
 			Txt.TextTransparency = 0
 			Txt.Font = Enum.Font.GothamBold
 			Container.Visible = true
-			EnsureStroke(TabCard, t.Accent, 1.6, 0.15)
+			EnsureStroke(TabCard, t.Accent or Color3.fromRGB(124, 92, 255), 1.6, 0.15)
 		end
 
 		AddConnection(TabHit.MouseButton1Click, function()
@@ -991,7 +994,7 @@ function NexacLib:MakeWindow(cfg)
 			TweenService:Create(Ico, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.0}):Play()
 			TweenService:Create(Txt, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.0}):Play()
 			Txt.Font = Enum.Font.GothamBold
-			local s = EnsureStroke(TabCard, t.Accent, 1.6, 0.15)
+			local s = EnsureStroke(TabCard, t.Accent or Color3.fromRGB(124, 92, 255), 1.6, 0.15)
 			s.Transparency = 0.15
 			Container.Visible = true
 		end)
@@ -999,16 +1002,16 @@ function NexacLib:MakeWindow(cfg)
 		-- FULL ELEMENT IMPLEMENTATION (restored)
 		local function GetElements(ItemParent)
 			local ElementFunction = {}
-			local t2 = NexacLib.Themes[NexacLib.SelectedTheme]
+			local t2 = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
 
 			local function NewElementFrame(height)
-				local frame = AddThemeObject(SetProps(MakeElement("RoundFrame", t2.Second, 0, 10), {
+				local frame = AddThemeObject(SetProps(MakeElement("RoundFrame", t2.Second or Color3.fromRGB(22, 23, 28), 0, 10), {
 					Size = UDim2.new(1, 0, 0, height),
 					Parent = ItemParent,
 					ClipsDescendants = true
 				}), "Second")
 				ApplyCard(frame, {shadow = false, transparency = 0.10, gradient = true})
-				EnsureStroke(frame, t2.Stroke, 1, 0.55)
+				EnsureStroke(frame, t2.Stroke or Color3.fromRGB(64, 66, 80), 1, 0.55)
 				return frame
 			end
 
