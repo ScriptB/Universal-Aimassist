@@ -1288,10 +1288,18 @@ task.spawn(function()
 			
 			-- Check UI visibility (Orion UI visibility)
 			game:GetService("RunService").Heartbeat:Connect(function()
-				-- Try to detect UI visibility (this is a basic check)
+				-- Try to detect UI visibility with multiple methods
 				local success, visible = pcall(function()
 					if OrionLib and OrionLib.UI then
-						return OrionLib.UI.Enabled
+						-- Method 1: Check Enabled property
+						if OrionLib.UI.Enabled ~= nil then
+							return OrionLib.UI.Enabled
+						end
+						-- Method 2: Check window visibility
+						local window = OrionLib.Windows and OrionLib.Windows[1]
+						if window then
+							return window.Visible
+						end
 					end
 					return true -- Default to visible if can't detect
 				end)
@@ -1308,6 +1316,13 @@ task.spawn(function()
 				Default = aimbotEnabled,
 				Callback = function(value)
 					aimbotEnabled = value
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "Aimbot Toggled",
+							Content = "Aimbot: " .. (value and "ON" or "OFF"),
+							Time = 1
+						})
+					end
 				end
 			})
 			
@@ -1399,6 +1414,13 @@ task.spawn(function()
 				Default = espEnabled,
 				Callback = function(value)
 					espEnabled = value
+					if OrionLib and OrionLib.MakeNotification then
+						OrionLib:MakeNotification({
+							Name = "ESP Toggled",
+							Content = "ESP: " .. (value and "ON" or "OFF"),
+							Time = 1
+						})
+					end
 				end
 			})
 			
@@ -1576,13 +1598,36 @@ task.spawn(function()
 				Default = Enum.KeyCode.RightShift,
 				Hold = false,
 				Callback = function()
-					-- Actual UI toggle logic
-					if OrionLib and OrionLib.UI then
-						OrionLib.UI.Enabled = not OrionLib.UI.Enabled
-						if OrionLib.MakeNotification then
+					-- Proper Orion UI toggle logic
+					if OrionLib then
+						-- Try multiple methods to toggle UI
+						local success = pcall(function()
+							-- Method 1: Try Hide/Show functions
+							if OrionLib.UI and OrionLib.UI.Enabled ~= nil then
+								OrionLib.UI.Enabled = not OrionLib.UI.Enabled
+							elseif OrionLib.Hide and OrionLib.Show then
+								if OrionLib.UI and OrionLib.UI.Enabled then
+									OrionLib:Hide()
+								else
+									OrionLib:Show()
+								end
+							else
+								-- Method 2: Try direct window toggle
+								local window = OrionLib.Windows and OrionLib.Windows[1]
+								if window then
+									window.Visible = not window.Visible
+								end
+							end
+						end)
+						
+						if success and OrionLib.MakeNotification then
+							local isVisible = false
+							pcall(function()
+								isVisible = OrionLib.UI and OrionLib.UI.Enabled
+							end)
 							OrionLib:MakeNotification({
 								Name = "UI Toggled",
-								Content = "UI: " .. (OrionLib.UI.Enabled and "Shown" or "Hidden"),
+								Content = "UI: " .. (isVisible and "Shown" or "Hidden"),
 								Time = 2
 							})
 						end
