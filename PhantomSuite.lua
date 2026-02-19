@@ -1094,7 +1094,7 @@ end
 local function createMainUI(lockedFeatures, safetyIssues)
 	-- Load NexacLib (modern Orion rebrand)
 	local success, NexacLib = pcall(function()
-		return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/refs/heads/main/Orion-Library/Nexac"))()
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/refs/heads/main/Orion-Library/NexacLib.lua"))()
 	end)
 
 	if not success then
