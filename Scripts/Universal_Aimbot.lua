@@ -252,11 +252,50 @@ local function main()
         warn("⚠️ Low compatibility detected. Some features may not work properly.")
     end
     
-    -- Create main UI with professional design
-    local Window = Bracket:CreateWindow({
-        WindowName = "🎯 Universal Aimbot v3.0",
-        Color = Color3.fromRGB(85, 170, 255)
-    }, game:GetService("CoreGui"))
+    -- Test basic UI creation
+    local success, Window = pcall(function()
+        return Bracket:CreateWindow({
+            WindowName = "🎯 Universal Aimbot v3.0",
+            Color = Color3.fromRGB(85, 170, 255)
+        }, game:GetService("CoreGui"))
+    end)
+    
+    if not success then
+        warn("❌ Failed to create window:", Window)
+        return
+    end
+    
+    -- Test basic tab creation
+    local success, Tab = pcall(function()
+        return Window:CreateTab("🎯 Aimbot")
+    end)
+    
+    if not success then
+        warn("❌ Failed to create tab:", Tab)
+        return
+    end
+    
+    -- Test basic section creation
+    local success, Section = pcall(function()
+        return Tab:CreateSection("Main Controls")
+    end)
+    
+    if not success then
+        warn("❌ Failed to create section:", Section)
+        return
+    end
+    
+    -- Test basic label creation
+    local success, Label = pcall(function()
+        return Section:CreateLabel("Universal Aimbot Loaded Successfully!")
+    end)
+    
+    if not success then
+        warn("❌ Failed to create label:", Label)
+        return
+    end
+    
+    print("✅ Basic UI test passed!")
     
     -- Create organized tabs with icons
     local AimbotTab = Window:CreateTab("🎯 Aimbot")
