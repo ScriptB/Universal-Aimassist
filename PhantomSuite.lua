@@ -1952,14 +1952,9 @@ task.spawn(function()
 		if distance > aimbotLockDistance * 2 then return end
 		
 		if blatantEnabled then
-			-- Direct snap for blatant mode with prediction
-			local predictedPosition = predict(target)
-			if not predictedPosition then return end
-			local predictedDistance = (predictedPosition - camera.CFrame.Position).Magnitude
-			if predictedDistance <= aimbotLockDistance * 2 then
-				if not wallCheck or not checkWall(char) then
-					camera.CFrame = CFrame.new(camera.CFrame.Position, predictedPosition)
-				end
+			-- Direct snap for blatant mode - EXACT and INSTANT
+			if not wallCheck or not checkWall(char) then
+				camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition)
 			end
 		else
 			local predictedPosition = predict(target)
