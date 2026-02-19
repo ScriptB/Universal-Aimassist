@@ -476,9 +476,25 @@ local function main()
         local detectionResults = runSilentDetection()
         
         -- Update GUI with results when available
-        if detectionResults then
+        if detectionResults and detectionResults.Status == "Complete" then
             print("📊 Detection complete - updating GUI")
-            -- GUI will be updated with detection results
+            
+            -- Update executorInfo with detection results
+            executorInfo.UNCPercentage = detectionResults.UNC or 0
+            executorInfo.SecurityScore = detectionResults.SecurityScore or 0
+            executorInfo.UNCCompatible = detectionResults.UNC > 0
+            
+            -- Update GUI labels if they exist
+            if StatusSection then
+                StatusSection:Label("✅ UNC Detection: " .. detectionResults.UNC .. "%")
+                StatusSection:Label("✅ Security Score: " .. (detectionResults.SecurityScore or 0) .. "%")
+                StatusSection:Label("✅ UNC Compatible: " .. (detectionResults.UNC > 0 and "YES" or "NO"))
+            end
+            
+            print("🔗 UNC Compatibility:", detectionResults.UNC .. "%")
+            print("🛡️ Security Score:", (detectionResults.SecurityScore or 0) .. "%")
+        else
+            print("⚠️ Detection incomplete")
         end
     end)
     
@@ -594,10 +610,10 @@ local function main()
     ScriptSettingsSection:Label("UI Library: Bracket Library")
     
     local ActionsSection = SettingsTab:CreateSection("Actions")
-    ActionsSection:Button("Console Copy Button (Enhanced)", function()
+    ActionsSection:Button("Advanced Dev Console Copy", function()
         Bracket:Notification({
-            Title = "Console Copy",
-            Description = "Use [C] buttons in Dev Console!",
+            Title = "Advanced Console Copy",
+            Description = "[C] buttons and Copy All in Dev Console!",
             Duration = 3
         })
     end)
@@ -615,40 +631,6 @@ local function main()
         })
         print("Script reload requested")
     end)
-    
-    SettingsTab:Button({
-        Name = "Console Copy Button (Enhanced)",
-        Side = "Left",
-        Callback = function()
-            Bracket:Notification({
-                Title = "Console Copy",
-                Description = "Use [C] buttons in Dev Console!",
-                Duration = 3
-            })
-        end
-    })
-    
-    SettingsTab:Button({
-        Name = "Destroy GUI",
-        Side = "Left",
-        Callback = function()
-            Window:Destroy()
-            print("GUI Destroyed")
-        end
-    })
-    
-    SettingsTab:Button({
-        Name = "Reload Script",
-        Side = "Left",
-        Callback = function()
-            Bracket:Notification({
-                Title = "Nexac Suite",
-                Description = "Script reload requested!",
-                Duration = 3
-            })
-            print("Script reload requested")
-        end
-    })
     
     -- Success message
     print("✅ Nexac Suite loaded successfully!")
