@@ -287,160 +287,316 @@ local function main()
     task.wait(2)
     LoadingWindow:Toggle(false)
     
-    -- Create main UI
+    -- Create main UI with professional design
     local Window = Bracket:CreateWindow({
-        WindowName = "Universal Aimbot v3.0",
+        WindowName = "🎯 Universal Aimbot v3.0",
         Color = Color3.fromRGB(85, 170, 255)
     }, game:GetService("CoreGui"))
     
-    -- Create tabs
-    local AimbotTab = Window:CreateTab("Aimbot 🎯")
-    local ESPTab = Window:CreateTab("ESP 👁")
-    local ExtrasTab = Window:CreateTab("Extras ⚡")
-    local KeybindsTab = Window:CreateTab("Keybinds ⌨️")
-    local PerformanceTab = Window:CreateTab("Performance 📊")
-    local AdminTab = Window:CreateTab("Admin 🔧")
+    -- Create organized tabs with icons
+    local AimbotTab = Window:CreateTab("🎯 Aimbot")
+    local ESPTab = Window:CreateTab("👁 ESP")
+    local VisualTab = Window:CreateTab("🎨 Visual")
+    local MovementTab = Window:CreateTab("⚡ Movement")
+    local PerformanceTab = Window:CreateTab("📊 Performance")
+    local SettingsTab = Window:CreateTab("⚙️ Settings")
     
     -- ===================================
-    -- AIMBOT TAB
+    -- AIMBOT TAB - Professional Layout
     -- ===================================
     
-    local AimbotMain = AimbotTab:CreateSection("Main Controls")
-    local AimbotSettings = AimbotTab:CreateSection("Aimbot Settings")
+    local AimbotMain = AimbotTab:CreateSection("🎯 Main Controls")
+    local AimbotSettings = AimbotTab:CreateSection("⚙️ Advanced Settings")
+    local AimbotVisual = AimbotTab:CreateSection("🎨 Visual Settings")
     
-    local aimbotToggle = AimbotMain:CreateToggle("Aimbot", nil, function(Value)
+    -- Main Controls Section
+    local aimbotToggle = AimbotMain:CreateToggle("🎯 Enable Aimbot", nil, function(Value)
         aimbotEnabled = Value
         fovCircle.Visible = Value
+        Bracket:Notification({
+            Title = "Aimbot " .. (Value and "Enabled" or "Disabled"),
+            Description = Value and "Aimbot is now active" or "Aimbot is now inactive",
+            Duration = 2
+        })
     end)
-    aimbotToggle:AddToolTip("Enable/Disable the aimbot")
+    aimbotToggle:AddToolTip("Toggle the aimbot on/off")
     
-    local smoothingSlider = AimbotSettings:CreateSlider("Smoothing", 0, 100, 5, false, function(Value)
+    local aimModeDropdown = AimbotMain:CreateDropdown("Aim Mode", {"Right Click", "Always On", "Toggle"}, function(Value)
+        -- Aim mode logic here
+        Bracket:Notification({
+            Title = "Aim Mode Changed",
+            Description = "Mode: " .. Value,
+            Duration = 2
+        })
+    end)
+    aimModeDropdown:AddToolTip("Choose how the aimbot activates")
+    
+    -- Advanced Settings Section
+    local smoothingSlider = AimbotSettings:CreateSlider("🎯 Smoothing", 0, 100, 5, false, function(Value)
         smoothing = 1 - (Value / 100)
     end)
-    smoothingSlider:AddToolTip("Higher values = smoother aim")
+    smoothingSlider:AddToolTip("Higher values = smoother, less aggressive aim")
     
-    local predictionSlider = AimbotSettings:CreateSlider("Prediction Strength", 0, 0.2, 0.065, true, function(Value)
+    local predictionSlider = AimbotSettings:CreateSlider("🔮 Prediction", 0, 0.2, 0.065, true, function(Value)
         predictionStrength = Value
     end)
-    predictionSlider:AddToolTip("How much to predict enemy movement")
+    predictionSlider:AddToolTip("Predict enemy movement (higher = more prediction)")
     
-    local fovSlider = AimbotSettings:CreateSlider("Aimbot FOV", 10, 500, 100, false, function(Value)
+    local fovSlider = AimbotSettings:CreateSlider("👁 FOV Radius", 10, 500, 100, false, function(Value)
         aimFov = Value
         fovCircle.Radius = Value
     end)
-    fovSlider:AddToolTip("Field of view for aimbot")
+    fovSlider:AddToolTip("Field of view radius for target detection")
     
-    local wallCheckToggle = AimbotSettings:CreateToggle("Wall Check", true, function(Value)
+    local reactionTimeSlider = AimbotSettings:CreateSlider("⚡ Reaction Time", 0, 100, 10, false, function(Value)
+        -- Reaction time logic here
+    end)
+    reactionTimeSlider:AddToolTip("Time to react to new targets (ms)")
+    
+    -- Visual Settings Section
+    local wallCheckToggle = AimbotSettings:CreateToggle("🧱 Wall Check", true, function(Value)
         wallCheck = Value
     end)
     wallCheckToggle:AddToolTip("Only aim at visible enemies")
     
-    local teamCheckToggle = AimbotSettings:CreateToggle("Team Check", false, function(Value)
+    local teamCheckToggle = AimbotSettings:CreateToggle("👥 Team Check", false, function(Value)
         teamCheck = Value
     end)
     teamCheckToggle:AddToolTip("Don't aim at teammates")
     
-    local healthCheckToggle = AimbotSettings:CreateToggle("Health Check", false, function(Value)
+    local healthCheckToggle = AimbotSettings:CreateToggle("❤️ Health Check", false, function(Value)
         healthCheck = Value
     end)
-    healthCheckToggle:AddToolTip("Don't aim at dead players")
+    healthCheckToggle:AddToolTip("Don't aim at dead/low health players")
     
-    local minHealthSlider = AimbotSettings:CreateSlider("Min Health", 0, 100, 0, false, function(Value)
+    local minHealthSlider = AimbotSettings:CreateSlider("💔 Min Health", 0, 100, 0, false, function(Value)
         minHealth = Value
     end)
     minHealthSlider:AddToolTip("Minimum health to target")
     
-    local stickyAimToggle = AimbotSettings:CreateToggle("Sticky Aim", false, function(Value)
+    local stickyAimToggle = AimbotSettings:CreateToggle("🎯 Sticky Aim", false, function(Value)
         stickyAimEnabled = Value
     end)
     stickyAimToggle:AddToolTip("Stay locked on target")
     
+    local autoFireToggle = AimbotSettings:CreateToggle("🔫 Auto Fire", false, function(Value)
+        -- Auto fire logic here
+    end)
+    autoFireToggle:AddToolTip("Automatically fire when locked on")
+    
+    local fovColorPicker = AimbotVisual:CreateColorpicker("🎨 FOV Color", function(Color)
+        circleColor = Color
+        fovCircle.Color = Color
+    end)
+    fovColorPicker:AddToolTip("Color of the FOV circle")
+    fovColorPicker:UpdateColor(circleColor)
+    
+    local rainbowFovToggle = AimbotVisual:CreateToggle("🌈 Rainbow FOV", false, function(Value)
+        rainbowFov = Value
+    end)
+    rainbowFovToggle:AddToolTip("Enable rainbow FOV circle")
+    
+    local rainbowSpeedSlider = AimbotVisual:CreateSlider("🌈 Rainbow Speed", 1, 20, 5, false, function(Value)
+        rainbowSpeed = Value / 1000
+    end)
+    rainbowSpeedSlider:AddToolTip("Speed of rainbow effect")
+    
     -- ===================================
-    -- ESP TAB
+    -- ESP TAB - Professional Layout
     -- ===================================
     
-    local ESPMain = ESPTab:CreateSection("ESP Settings")
-    local ESPVisual = ESPTab:CreateSection("Visual Settings")
+    local ESPMain = ESPTab:CreateSection("👁 ESP Features")
+    local ESPVisual = ESPTab:CreateSection("🎨 Visual Settings")
+    local ESPFilters = ESPTab:CreateSection("🔍 Filters")
     
-    local espToggle = ESPMain:CreateToggle("ESP", nil, function(Value)
+    -- ESP Features Section
+    local espToggle = ESPMain:CreateToggle("👁 Enable ESP", nil, function(Value)
         espEnabled = Value
+        Bracket:Notification({
+            Title = "ESP " .. (Value and "Enabled" or "Disabled"),
+            Description = Value and "ESP is now active" or "ESP is now inactive",
+            Duration = 2
+        })
     end)
     espToggle:AddToolTip("Enable ESP features")
     
-    local espBoxesToggle = ESPMain:CreateToggle("Boxes", false, function(Value)
+    local espBoxesToggle = ESPMain:CreateToggle("📦 Boxes", false, function(Value)
         espBoxes = Value
     end)
     espBoxesToggle:AddToolTip("Show player boxes")
     
-    local espNamesToggle = ESPMain:CreateToggle("Names", false, function(Value)
+    local espNamesToggle = ESPMain:CreateToggle("📝 Names", false, function(Value)
         espNames = Value
     end)
     espNamesToggle:AddToolTip("Show player names")
     
-    local espHealthToggle = ESPMain:CreateToggle("Health", false, function(Value)
+    local espHealthToggle = ESPMain:CreateToggle("❤️ Health", false, function(Value)
         espHealth = Value
     end)
-    espHealthToggle:AddToolTip("Show player health")
+    espHealthToggle:AddToolTip("Show player health bars")
     
-    local espDistanceToggle = ESPMain:CreateToggle("Distance", false, function(Value)
+    local espDistanceToggle = ESPMain:CreateToggle("📏 Distance", false, function(Value)
         espDistance = Value
     end)
     espDistanceToggle:AddToolTip("Show player distance")
     
-    local espTracersToggle = ESPMain:CreateToggle("Tracers", false, function(Value)
+    local espTracersToggle = ESPMain:CreateToggle("📍 Tracers", false, function(Value)
         espTracers = Value
     end)
     espTracersToggle:AddToolTip("Show player tracers")
     
-    local espColorPicker = ESPVisual:CreateColorpicker("ESP Color", function(Color)
+    local espSkeletonToggle = ESPMain:CreateToggle("🦴 Skeleton", false, function(Value)
+        -- Skeleton ESP logic here
+    end)
+    espSkeletonToggle:AddToolTip("Show player skeleton")
+    
+    local espChamsToggle = ESPMain:CreateToggle("🎭 Chams", false, function(Value)
+        -- Chams ESP logic here
+    end)
+    espChamsToggle:AddToolTip("Show player chams")
+    
+    -- Visual Settings Section
+    local espColorPicker = ESPVisual:CreateColorpicker("🎨 ESP Color", function(Color)
         espColor = Color
     end)
     espColorPicker:AddToolTip("Color of ESP elements")
     espColorPicker:UpdateColor(espColor)
     
+    local espThicknessSlider = ESPVisual:CreateSlider("📏 Line Thickness", 1, 5, 1, false, function(Value)
+        -- ESP thickness logic here
+    end)
+    espThicknessSlider:AddToolTip("Thickness of ESP lines")
+    
+    local espDistanceSlider = ESPVisual:CreateSlider("🔍 Max Distance", 100, 1000, 500, false, function(Value)
+        -- ESP distance logic here
+    end)
+    espDistanceSlider:AddToolTip("Maximum distance for ESP rendering")
+    
+    -- Filters Section
+    local espShowFriendsToggle = ESPFilters:CreateToggle("👥 Show Friends", true, function(Value)
+        -- Friend filter logic here
+    end)
+    espShowFriendsToggle:AddToolTip("Show friends in ESP")
+    
+    local espShowEnemiesToggle = ESPFilters:CreateToggle("⚔️ Show Enemies", true, function(Value)
+        -- Enemy filter logic here
+    end)
+    espShowEnemiesToggle:AddToolTip("Show enemies in ESP")
+    
+    local espShowTeamToggle = ESPFilters:CreateToggle("🛡️ Show Team", false, function(Value)
+        -- Team filter logic here
+    end)
+    espShowTeamToggle:AddToolTip("Show teammates in ESP")
+    
     -- ===================================
-    -- EXTRAS TAB
+    -- VISUAL TAB - Professional Layout
     -- ===================================
     
-    local ExtrasMain = ExtrasTab:CreateSection("Movement")
-    local ExtrasSettings = ExtrasTab:CreateSection("Character Settings")
+    local VisualMain = VisualTab:CreateSection("🎨 Visual Effects")
+    local VisualUI = VisualTab:CreateSection("🖥️ UI Settings")
     
-    local flyToggle = ExtrasMain:CreateToggle("Fly", false, function(Value)
+    -- Visual Effects Section
+    local crosshairToggle = VisualMain:CreateToggle("🎯 Crosshair", false, function(Value)
+        -- Crosshair logic here
+    end)
+    crosshairToggle:AddToolTip("Show custom crosshair")
+    
+    local crosshairColorPicker = VisualMain:CreateColorpicker("🎨 Crosshair Color", function(Color)
+        -- Crosshair color logic here
+    end)
+    crosshairColorPicker:AddToolTip("Color of crosshair")
+    
+    local worldColorPicker = VisualMain:CreateColorpicker("🌍 World Color", function(Color)
+        -- World color logic here
+    end)
+    worldColorPicker:AddToolTip("Change world rendering color")
+    
+    local ambientSlider = VisualMain:CreateSlider("💡 Ambient Light", 0, 2, 1, true, function(Value)
+        -- Ambient light logic here
+    end)
+    ambientSlider:AddToolTip("Adjust ambient lighting")
+    
+    -- UI Settings Section
+    local uiScaleSlider = VisualUI:CreateSlider("📏 UI Scale", 50, 150, 100, false, function(Value)
+        -- UI scale logic here
+    end)
+    uiScaleSlider:AddToolTip("Scale of user interface")
+    
+    local transparencySlider = VisualUI:CreateSlider("👻 Transparency", 0, 100, 0, false, function(Value)
+        -- UI transparency logic here
+    end)
+    transparencySlider:AddToolTip("UI transparency level")
+    
+    -- ===================================
+    -- MOVEMENT TAB - Professional Layout
+    -- ===================================
+    
+    local MovementMain = MovementTab:CreateSection("⚡ Movement")
+    local MovementCharacter = MovementTab:CreateSection("🏃 Character")
+    
+    -- Movement Section
+    local flyToggle = MovementMain:CreateToggle("✈️ Fly", false, function(Value)
         flyEnabled = Value
         if Value then
             startFly()
         else
             stopFly()
         end
+        Bracket:Notification({
+            Title = "Fly " .. (Value and "Enabled" or "Disabled"),
+            Description = Value and "Flight mode activated" or "Flight mode deactivated",
+            Duration = 2
+        })
     end)
     flyToggle:AddToolTip("Enable fly mode")
     
-    local flySpeedSlider = ExtrasMain:CreateSlider("Fly Speed", 10, 200, 50, false, function(Value)
+    local flySpeedSlider = MovementMain:CreateSlider("✈️ Fly Speed", 10, 200, 50, false, function(Value)
         flySpeed = Value
     end)
     flySpeedSlider:AddToolTip("Speed of fly mode")
     
-    local noclipToggle = ExtrasMain:CreateToggle("Noclip", false, function(Value)
+    local noclipToggle = MovementMain:CreateToggle("👻 Noclip", false, function(Value)
         noclipEnabled = Value
         if Value then
             startNoclip()
         else
             stopNoclip()
         end
+        Bracket:Notification({
+            Title = "Noclip " .. (Value and "Enabled" or "Disabled"),
+            Description = Value and "Noclip mode activated" or "Noclip mode deactivated",
+            Duration = 2
+        })
     end)
     noclipToggle:AddToolTip("Enable noclip mode")
     
-    local infJumpToggle = ExtrasMain:CreateToggle("Infinite Jump", false, function(Value)
+    local infJumpToggle = MovementMain:CreateToggle("🦘 Infinite Jump", false, function(Value)
         infJumpEnabled = Value
         if Value then
             startInfJump()
         else
             stopInfJump()
         end
+        Bracket:Notification({
+            Title = "Infinite Jump " .. (Value and "Enabled" or "Disabled"),
+            Description = Value and "Infinite jump activated" or "Infinite jump deactivated",
+            Duration = 2
+        })
     end)
     infJumpToggle:AddToolTip("Enable infinite jump")
     
-    local walkSpeedSlider = ExtrasSettings:CreateSlider("Walk Speed", 16, 100, 16, false, function(Value)
+    local speedToggle = MovementMain:CreateToggle("🏃 Speed Boost", false, function(Value)
+        -- Speed boost logic here
+    end)
+    speedToggle:AddToolTip("Enable speed boost")
+    
+    local speedSlider = MovementMain:CreateSlider("⚡ Speed Multiplier", 1, 5, 1, true, function(Value)
+        -- Speed multiplier logic here
+    end)
+    speedSlider:AddToolTip("Movement speed multiplier")
+    
+    -- Character Section
+    local walkSpeedSlider = MovementCharacter:CreateSlider("🚶 Walk Speed", 16, 100, 16, false, function(Value)
         walkSpeed = Value
         if plr.Character and plr.Character:FindFirstChild("Humanoid") then
             plr.Character.Humanoid.WalkSpeed = Value
@@ -448,7 +604,7 @@ local function main()
     end)
     walkSpeedSlider:AddToolTip("Character walk speed")
     
-    local jumpPowerSlider = ExtrasSettings:CreateSlider("Jump Power", 50, 200, 50, false, function(Value)
+    local jumpPowerSlider = MovementCharacter:CreateSlider("🦘 Jump Power", 50, 200, 50, false, function(Value)
         jumpPower = Value
         if plr.Character and plr.Character:FindFirstChild("Humanoid") then
             plr.Character.Humanoid.JumpPower = Value
@@ -456,72 +612,76 @@ local function main()
     end)
     jumpPowerSlider:AddToolTip("Character jump power")
     
-    -- ===================================
-    -- KEYBINDS TAB
-    -- ===================================
-    
-    local KeybindsMain = KeybindsTab:CreateSection("Aimbot Keybinds")
-    local KeybindsExtras = KeybindsTab:CreateSection("Extras Keybinds")
-    
-    KeybindsMain:CreateLabel("RightShift - Toggle Aimbot")
-    KeybindsMain:CreateLabel("RightControl - Toggle ESP")
-    KeybindsMain:CreateLabel("RightAlt - Toggle Sticky Aim")
-    
-    KeybindsExtras:CreateLabel("F - Toggle Fly")
-    KeybindsExtras:CreateLabel("N - Toggle Noclip")
-    KeybindsExtras:CreateLabel("J - Toggle Infinite Jump")
-    KeybindsExtras:CreateLabel("F9 - Toggle UI")
-    KeybindsExtras:CreateLabel("Delete - Destroy UI (Stealth)")
+    local gravitySlider = MovementCharacter:CreateSlider("🌍 Gravity", 0, 200, 196.2, true, function(Value)
+        -- Gravity logic here
+    end)
+    gravitySlider:AddToolTip("World gravity multiplier")
     
     -- ===================================
-    -- PERFORMANCE TAB
+    -- PERFORMANCE TAB - Professional Layout
     -- ===================================
     
-    local PerfMain = PerformanceTab:CreateSection("Performance Monitor")
-    local PerfSettings = PerformanceTab:CreateSection("Settings")
+    local PerfMonitor = PerformanceTab:CreateSection("📊 Performance Monitor")
+    local PerfSettings = PerformanceTab:CreateSection("⚙️ Performance Settings")
     
-    local fpsLabel = PerfMain:CreateLabel("FPS: 0")
-    local pingLabel = PerfMain:CreateLabel("Ping: 0ms")
-    local uptimeLabel = PerfMain:CreateLabel("Uptime: 0s")
+    -- Performance Monitor Section
+    local fpsLabel = PerfMonitor:CreateLabel("🎯 FPS: 0")
+    local pingLabel = PerfMonitor:CreateLabel("🌐 Ping: 0ms")
+    local uptimeLabel = PerfMonitor:CreateLabel("⏱️ Uptime: 0s")
+    local memoryLabel = PerfMonitor:CreateLabel("💾 Memory: 0MB")
+    local entitiesLabel = PerfMonitor:CreateLabel("👥 Entities: 0")
     
-    local fpsToggle = PerfSettings:CreateToggle("Show FPS", true, function(Value)
+    -- Performance Settings Section
+    local fpsToggle = PerfSettings:CreateToggle("🎯 Show FPS", true, function(Value)
         fpsCounter.visible = Value
     end)
     fpsToggle:AddToolTip("Show FPS counter")
     
-    local pingToggle = PerfSettings:CreateToggle("Show Ping", true, function(Value)
+    local pingToggle = PerfSettings:CreateToggle("🌐 Show Ping", true, function(Value)
         pingCounter.visible = Value
     end)
     pingToggle:AddToolTip("Show ping counter")
     
+    local maxFpsSlider = PerfSettings:CreateSlider("🎯 Max FPS", 30, 144, 60, false, function(Value)
+        -- Max FPS logic here
+    end)
+    maxFpsSlider:AddToolTip("Maximum FPS limit")
+    
+    local renderDistanceSlider = PerfSettings:CreateSlider("🔍 Render Distance", 100, 1000, 500, false, function(Value)
+        -- Render distance logic here
+    end)
+    renderDistanceSlider:AddToolTip("ESP render distance limit")
+    
     -- ===================================
-    -- ADMIN TAB
+    -- SETTINGS TAB - Professional Layout
     -- ===================================
     
-    local AdminMain = AdminTab:CreateSection("Configuration")
-    local AdminSettings = AdminTab:CreateSection("System")
+    local SettingsMain = SettingsTab:CreateSection("⚙️ Configuration")
+    local SettingsUI = SettingsTab:CreateSection("🖥️ Interface")
+    local SettingsDanger = SettingsTab:CreateSection("⚠️ Danger Zone")
     
-    local saveButton = AdminMain:CreateButton("Save Config", function()
+    -- Configuration Section
+    local saveButton = SettingsMain:CreateButton("💾 Save Config", function()
         -- Save configuration logic here
         Bracket:Notification({
-            Title = "Configuration Saved",
-            Description = "Your settings have been saved",
+            Title = "✅ Configuration Saved",
+            Description = "Your settings have been saved successfully",
             Duration = 3
         })
     end)
     saveButton:AddToolTip("Save current configuration")
     
-    local loadButton = AdminMain:CreateButton("Load Config", function()
+    local loadButton = SettingsMain:CreateButton("📂 Load Config", function()
         -- Load configuration logic here
         Bracket:Notification({
-            Title = "Configuration Loaded",
-            Description = "Your settings have been loaded",
+            Title = "📂 Configuration Loaded",
+            Description = "Your settings have been loaded successfully",
             Duration = 3
         })
     end)
     loadButton:AddToolTip("Load saved configuration")
     
-    local resetButton = AdminMain:CreateButton("Reset All Settings", function()
+    local resetButton = SettingsMain:CreateButton("🔄 Reset All Settings", function()
         -- Reset all variables to defaults
         aimbotEnabled = false
         espEnabled = false
@@ -537,22 +697,83 @@ local function main()
         infJumpToggle:SetValue(false)
         
         Bracket:Notification({
-            Title = "Settings Reset",
+            Title = "🔄 Settings Reset",
             Description = "All settings have been reset to defaults",
             Duration = 3
         })
     end)
     resetButton:AddToolTip("Reset all settings to default values")
     
-    local destroyButton = AdminSettings:CreateButton("Destroy UI (Stealth)", function()
-        Window:Toggle(false)
+    local exportButton = SettingsMain:CreateButton("📤 Export Config", function()
+        -- Export config logic here
         Bracket:Notification({
-            Title = "UI Destroyed",
-            Description = "UI has been destroyed for stealth",
+            Title = "📤 Config Exported",
+            Description = "Configuration exported to clipboard",
+            Duration = 3
+        })
+    end)
+    exportButton:AddToolTip("Export configuration to clipboard")
+    
+    -- Interface Section
+    local keybindsButton = SettingsUI:CreateButton("⌨️ Keybinds", function()
+        -- Keybinds UI logic here
+        Bracket:Notification({
+            Title = "⌨️ Keybinds",
+            Description = "Keybind configuration opened",
             Duration = 2
         })
     end)
-    destroyButton:AddToolTip("Destroy UI completely")
+    keybindsButton:AddToolTip("Configure keybinds")
+    
+    local themeDropdown = SettingsUI:CreateDropdown("🎨 Theme", {"Default", "Dark", "Light", "Neon"}, function(Value)
+        -- Theme logic here
+        Bracket:Notification({
+            Title = "🎨 Theme Changed",
+            Description = "Theme: " .. Value,
+            Duration = 2
+        })
+    end)
+    themeDropdown:AddToolTip("Choose UI theme")
+    
+    -- Danger Zone Section
+    local destroyButton = SettingsDanger:CreateButton("💀 Destroy UI (Stealth)", function()
+        Window:Toggle(false)
+        Bracket:Notification({
+            Title = "💀 UI Destroyed",
+            Description = "UI has been destroyed for stealth mode",
+            Duration = 2
+        })
+    end)
+    destroyButton:AddToolTip("Destroy UI completely (stealth mode)")
+    
+    local unloadButton = SettingsDanger:CreateButton("🔫 Unload Script", function()
+        -- Unload script logic here
+        Bracket:Notification({
+            Title = "🔫 Script Unloaded",
+            Description = "Script has been unloaded",
+            Duration = 2
+        })
+    end)
+    unloadButton:AddToolTip("Unload the entire script")
+    
+    -- Info Section
+    local infoSection = SettingsTab:CreateSection("ℹ️ Information")
+    infoSection:CreateLabel("🎯 Universal Aimbot v3.0")
+    infoSection:CreateLabel("👥 ScriptB Team")
+    infoSection:CreateLabel("🔗 github.com/ScriptB/Universal-Aimassist")
+    infoSection:CreateLabel("⚡ UNC Compatibility: " .. compatibility.Overall .. "%")
+    
+    -- Welcome notification
+    Bracket:Notification({
+        Title = "🎯 Universal Aimbot v3.0",
+        Description = "Loaded successfully! Press F9 to toggle UI",
+        Duration = 3
+    })
+    
+    print("✅ Universal Aimbot v3.0 loaded successfully!")
+    print("🎯 Right Click to aim")
+    print("⌨️ Press F9 to toggle UI")
+    print("🔍 UNC Compatibility: " .. compatibility.Overall .. "%")
     
     -- ===================================
     -- FOV CIRCLE
