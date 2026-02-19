@@ -1,5 +1,8 @@
---// NexacLib Modern (single-file) - Rebrand of Orion -> Nexac (same API / behavior)
---// Fully functional build (elements implemented)
+--// NexacLib Modern (single-file)
+--// Unique, modern Roblox UI library with Orion-style API compatibility.
+--// Single file. No external dependencies. Optional exploit APIs supported (gethui/syn.protect_gui/writefile/readfile).
+--// Elements: Label, Paragraph, Button, Toggle, Slider, Dropdown, MultiDropdown, Bind, Textbox, Colorpicker, Section, SearchBox.
+--// Utilities: Notifications, Config Save/Load, Themes + runtime theme switching, RightShift toggle, Draggable window.
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -11,68 +14,103 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 local NexacLib = {
+	Version = "1.2.0",
 	Elements = {},
-	ThemeObjects = {},
+	ThemeObjects = {}, -- kept for compatibility (not relied on internally)
 	Connections = {},
 	Flags = {},
 	Windows = {},
-	UI = {
-		Enabled = true
-	},
+	UI = { Enabled = true },
+
 	Themes = {
 		Default = {
-			-- Base
+			-- Surfaces
 			Main     = Color3.fromRGB(14, 15, 18),
 			Second   = Color3.fromRGB(22, 23, 28),
+			Third    = Color3.fromRGB(28, 30, 38),
 			Stroke   = Color3.fromRGB(64, 66, 80),
 			Divider  = Color3.fromRGB(46, 48, 60),
+
+			-- Text
 			Text     = Color3.fromRGB(244, 245, 250),
 			TextDark = Color3.fromRGB(170, 172, 186),
 
-			-- Added tokens
+			-- Accents
 			Accent   = Color3.fromRGB(124, 92, 255),
 			Accent2  = Color3.fromRGB(72, 208, 255),
 			Good     = Color3.fromRGB(42, 196, 112),
 			Warn     = Color3.fromRGB(255, 178, 45),
 			Bad      = Color3.fromRGB(255, 92, 92),
 		},
+		NeonAbyss = {
+			Main     = Color3.fromRGB(8, 9, 12),
+			Second   = Color3.fromRGB(14, 14, 22),
+			Third    = Color3.fromRGB(20, 20, 32),
+			Stroke   = Color3.fromRGB(88, 92, 118),
+			Divider  = Color3.fromRGB(48, 50, 72),
+
+			Text     = Color3.fromRGB(242, 244, 255),
+			TextDark = Color3.fromRGB(168, 174, 200),
+
+			Accent   = Color3.fromRGB(0, 255, 182),
+			Accent2  = Color3.fromRGB(255, 76, 208),
+			Good     = Color3.fromRGB(0, 255, 182),
+			Warn     = Color3.fromRGB(255, 210, 64),
+			Bad      = Color3.fromRGB(255, 78, 78),
+		},
 	},
+
 	SelectedTheme = "Default",
 	Folder = nil,
-	SaveCfg = false
+	SaveCfg = false,
+
+	-- placeholder icon map; user can override NexacLib.Icons["name"]="rbxassetid://..."
+	Icons = {},
+	-- internal theme bindings: array of {Obj=Instance, Key="Text", Prop="TextColor3"}
+	_ThemeBindings = {},
 }
 
--- Placeholder icon mapping
-local Icons = {}
-local function GetIcon(IconName)
-	return Icons[IconName]
+local function GetIcon(iconNameOrId)
+	return NexacLib.Icons[iconNameOrId]
 end
 
-warn("Nexac Library (Modern) - Icons are placeholders. Provide your own icon mapping if needed.")
-
--- ScreenGui mount (same behavior, rebranded name)
+--========================================================
+-- ScreenGui mount
+--========================================================
 local Nexac = Instance.new("ScreenGui")
 Nexac.Name = "Nexac"
 Nexac.ResetOnSpawn = false
 Nexac.IgnoreGuiInset = true
 
-if syn and syn.protect_gui then
-	syn.protect_gui(Nexac)
-	Nexac.Parent = game:GetService("CoreGui")
-else
-	Nexac.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+do
+	local ok = false
+	pcall(function()
+		if syn and syn.protect_gui then
+			syn.protect_gui(Nexac)
+			Nexac.Parent = game:GetService("CoreGui")
+			ok = true
+		end
+	end)
+	if not ok then
+		local parent
+		pcall(function()
+			parent = (gethui and gethui()) or game:GetService("CoreGui")
+		end)
+		Nexac.Parent = parent or game:GetService("CoreGui")
+	end
 end
 
 -- remove duplicates
-local function cleanupDuplicates()
+do
 	local parent = Nexac.Parent
-	for _, g in ipairs(parent:GetChildren()) do
-		if g:IsA("ScreenGui") and g.Name == Nexac.Name and g ~= Nexac then
-			g:Destroy()
+	if parent then
+		for _, g in ipairs(parent:GetChildren()) do
+			if g:IsA("ScreenGui") and g.Name == Nexac.Name and g ~= Nexac then
+				pcall(function() g:Destroy() end)
+			end
 		end
 	end
 end
-cleanupDuplicates()
 
 function NexacLib:IsRunning()
 	local parent = Nexac.Parent
@@ -83,7 +121,7 @@ function NexacLib:IsRunning()
 end
 
 local function AddConnection(signal, fn)
-	if not NexacLib:IsRunning() then return end
+	if not NexacLib:IsRunning() then return nil end
 	local c = signal:Connect(fn)
 	table.insert(NexacLib.Connections, c)
 	return c
@@ -98,7 +136,9 @@ task.spawn(function()
 	end
 end)
 
+--========================================================
 -- Helpers
+--========================================================
 local function Create(className, props, children)
 	local obj = Instance.new(className)
 	if props then
@@ -136,6 +176,19 @@ local function SetChildren(obj, children)
 	return obj
 end
 
+local function SetZIndexRecursive(root, z)
+	local function apply(o)
+		if typeof(o) == "Instance" and o:IsA("GuiObject") then
+			o.ZIndex = z
+		end
+		for _, child in ipairs(o:GetChildren()) do
+			apply(child)
+		end
+	end
+	apply(root)
+end
+
+
 local function Round(num, factor)
 	local result = math.floor(num / factor + (math.sign(num) * 0.5)) * factor
 	if result < 0 then result = result + factor end
@@ -148,59 +201,75 @@ local function ReturnProperty(obj)
 	if obj:IsA("UIStroke") then return "Color" end
 	if obj:IsA("TextLabel") or obj:IsA("TextBox") then return "TextColor3" end
 	if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then return "ImageColor3" end
+	return nil
 end
 
--- PATCHED: safe theming
-local function AddThemeObject(obj, typeName)
-	NexacLib.ThemeObjects[typeName] = NexacLib.ThemeObjects[typeName] or {}
-	table.insert(NexacLib.ThemeObjects[typeName], obj)
+local function AddThemeObject(obj, themeKey)
+	-- Compatibility: also populate ThemeObjects table like Orion
+	NexacLib.ThemeObjects[themeKey] = NexacLib.ThemeObjects[themeKey] or {}
+	table.insert(NexacLib.ThemeObjects[themeKey], obj)
 
 	local prop = ReturnProperty(obj)
-	if prop and NexacLib.Themes[NexacLib.SelectedTheme] and NexacLib.Themes[NexacLib.SelectedTheme][typeName] then
-		pcall(function()
-			obj[prop] = NexacLib.Themes[NexacLib.SelectedTheme][typeName]
-		end)
+	if prop then
+		table.insert(NexacLib._ThemeBindings, { Obj = obj, Key = themeKey, Prop = prop })
+		local t = NexacLib.Themes[NexacLib.SelectedTheme]
+		if t and t[themeKey] then
+			pcall(function() obj[prop] = t[themeKey] end)
+		end
 	end
 	return obj
 end
 
 local function SetTheme()
-	local currentTheme = NexacLib.Themes[NexacLib.SelectedTheme]
-	if not currentTheme then return end
-	
-	for typeName, list in pairs(NexacLib.ThemeObjects) do
-		for _, obj in pairs(list) do
-			pcall(function()
-				local prop = ReturnProperty(obj)
-				if prop and currentTheme[typeName] then
-					obj[prop] = currentTheme[typeName]
-				end
-			end)
+	local t = NexacLib.Themes[NexacLib.SelectedTheme]
+	if not t then return end
+	for i = #NexacLib._ThemeBindings, 1, -1 do
+		local b = NexacLib._ThemeBindings[i]
+		if b.Obj == nil or b.Obj.Parent == nil then
+			table.remove(NexacLib._ThemeBindings, i)
+		else
+			local v = t[b.Key]
+			if v ~= nil then
+				pcall(function() b.Obj[b.Prop] = v end)
+			end
 		end
 	end
 end
 
--- Config
-local function PackColor(c)
-	return {R = c.R * 255, G = c.G * 255, B = c.B * 255}
+function NexacLib:SetTheme(themeName)
+	if self.Themes[themeName] then
+		self.SelectedTheme = themeName
+		SetTheme()
+	end
 end
+
+--========================================================
+-- Config
+--========================================================
+local function PackColor(c)
+	return { R = c.R * 255, G = c.G * 255, B = c.B * 255 }
+end
+
 local function UnpackColor(t)
 	return Color3.fromRGB(t.R, t.G, t.B)
 end
 
 local function LoadCfg(cfgStr)
-	local data = HttpService:JSONDecode(cfgStr)
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(cfgStr)
+	end)
+	if not ok or type(data) ~= "table" then return end
+
 	for k, v in pairs(data) do
-		if NexacLib.Flags[k] then
+		local flag = NexacLib.Flags[k]
+		if flag and type(flag) == "table" and flag.Set then
 			task.spawn(function()
-				if NexacLib.Flags[k].Type == "Colorpicker" then
-					NexacLib.Flags[k]:Set(UnpackColor(v))
+				if flag.Type == "Colorpicker" then
+					flag:Set(UnpackColor(v))
 				else
-					NexacLib.Flags[k]:Set(v)
+					flag:Set(v)
 				end
 			end)
-		else
-			warn("Nexac Config Loader - Missing flag:", k)
 		end
 	end
 end
@@ -208,7 +277,7 @@ end
 local function SaveCfg(name)
 	local data = {}
 	for k, f in pairs(NexacLib.Flags) do
-		if f.Save then
+		if type(f) == "table" and f.Save then
 			if f.Type == "Colorpicker" then
 				data[k] = PackColor(f.Value)
 			else
@@ -217,11 +286,15 @@ local function SaveCfg(name)
 		end
 	end
 	if writefile and NexacLib.Folder then
-		writefile(NexacLib.Folder .. "/" .. name .. ".txt", HttpService:JSONEncode(data))
+		pcall(function()
+			writefile(NexacLib.Folder .. "/" .. tostring(name) .. ".txt", HttpService:JSONEncode(data))
+		end)
 	end
 end
 
+--========================================================
 -- Draggable
+--========================================================
 local function MakeDraggable(dragPoint, main)
 	pcall(function()
 		local dragging, dragInput, mousePos, framePos = false
@@ -254,13 +327,13 @@ local function MakeDraggable(dragPoint, main)
 	end)
 end
 
--- Modern styling system (no external assets)
+--========================================================
+-- Modern styling
+--========================================================
 local UI = {
 	Corner = 12,
 	StrokeThickness = 1,
 	StrokeTransparency = 0.55,
-	CardTransparency = 0.08,
-	SubCardTransparency = 0.12,
 	HoverLift = 2,
 	PressDrop = 1,
 	ShadowLayers = 3,
@@ -279,16 +352,7 @@ local function EnsureStroke(frame, color, thickness, transparency)
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.LineJoinMode = Enum.LineJoinMode.Round
 	s.Thickness = thickness or UI.StrokeThickness
-	
-	-- Safe theme access to prevent blank UI
-	local defaultColor = Color3.fromRGB(64, 66, 80)
-	local currentTheme = NexacLib.Themes[NexacLib.SelectedTheme]
-	if currentTheme and currentTheme.Stroke then
-		s.Color = color or currentTheme.Stroke
-	else
-		s.Color = color or defaultColor
-	end
-	
+	s.Color = color or NexacLib.Themes[NexacLib.SelectedTheme].Stroke
 	s.Transparency = transparency == nil and UI.StrokeTransparency or transparency
 	s.Parent = frame
 	return s
@@ -308,7 +372,8 @@ local function AddShadowLayers(frame, layers)
 	shadowFolder.Name = "NexacShadow"
 	shadowFolder.Parent = frame
 
-	for i = 1, (layers or UI.ShadowLayers) do
+	local count = layers or UI.ShadowLayers
+	for i = 1, count do
 		local s = Instance.new("Frame")
 		s.Name = "L" .. i
 		s.BorderSizePixel = 0
@@ -323,7 +388,7 @@ local function AddShadowLayers(frame, layers)
 	end
 
 	local function sync()
-		for i = 1, (layers or UI.ShadowLayers) do
+		for i = 1, count do
 			local s = shadowFolder:FindFirstChild("L" .. i)
 			if s then
 				s.AnchorPoint = frame.AnchorPoint
@@ -345,17 +410,19 @@ local function ApplyCard(frame, opts)
 	frame.BorderSizePixel = 0
 	EnsureCorner(frame, opts.corner or UI.Corner)
 	EnsureStroke(frame, opts.strokeColor, opts.strokeThickness, opts.strokeTransparency)
-	frame.BackgroundTransparency = opts.transparency == nil and UI.SubCardTransparency or opts.transparency
+
+	if opts.transparency ~= nil then
+		frame.BackgroundTransparency = opts.transparency
+	end
 
 	if opts.gradient ~= false then
-		local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
-		local secondColor = t.Second or Color3.fromRGB(22, 23, 28)
+		local t = NexacLib.Themes[NexacLib.SelectedTheme]
 		local top = Color3.fromRGB(
-			math.clamp(secondColor.R * 255 + 10, 0, 255),
-			math.clamp(secondColor.G * 255 + 10, 0, 255),
-			math.clamp(secondColor.B * 255 + 14, 0, 255)
+			math.clamp(t.Second.R * 255 + 10, 0, 255),
+			math.clamp(t.Second.G * 255 + 10, 0, 255),
+			math.clamp(t.Second.B * 255 + 14, 0, 255)
 		)
-		EnsureGradient(frame, 90, top, secondColor)
+		EnsureGradient(frame, 90, top, frame.BackgroundColor3)
 	end
 
 	if opts.shadow then
@@ -373,34 +440,41 @@ local function ApplyHitEffects(hit, frame, opts)
 	local pressPos = basePos + UDim2.new(0, 0, 0, UI.PressDrop)
 
 	AddConnection(hit.MouseEnter, function()
-		TweenService:Create(frame, tweenIn, {Position = hoverPos}):Play()
+		TweenService:Create(frame, tweenIn, { Position = hoverPos }):Play()
 		if opts.accentStroke then
 			local t = NexacLib.Themes[NexacLib.SelectedTheme]
 			local s = EnsureStroke(frame, t.Accent, 1.5, 0.20)
-			TweenService:Create(s, tweenIn, {Transparency = 0.20}):Play()
+			TweenService:Create(s, tweenIn, { Transparency = 0.20 }):Play()
 		end
 	end)
 
 	AddConnection(hit.MouseLeave, function()
-		TweenService:Create(frame, tweenOut, {Position = basePos}):Play()
+		TweenService:Create(frame, tweenOut, { Position = basePos }):Play()
 		if opts.accentStroke then
 			local s = frame:FindFirstChildOfClass("UIStroke")
-			if s then TweenService:Create(s, tweenOut, {Transparency = UI.StrokeTransparency}):Play() end
+			if s then TweenService:Create(s, tweenOut, { Transparency = UI.StrokeTransparency }):Play() end
 		end
 	end)
 
 	AddConnection(hit.MouseButton1Down, function()
-		TweenService:Create(frame, TweenInfo.new(0.10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = pressPos}):Play()
+		TweenService:Create(frame, TweenInfo.new(0.10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = pressPos }):Play()
 	end)
 
 	AddConnection(hit.MouseButton1Up, function()
-		TweenService:Create(frame, tweenIn, {Position = hoverPos}):Play()
+		TweenService:Create(frame, tweenIn, { Position = hoverPos }):Play()
 	end)
 end
 
--- Key filters
-local WhitelistedMouse = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton3}
-local BlacklistedKeys = {Enum.KeyCode.Unknown,Enum.KeyCode.W,Enum.KeyCode.A,Enum.KeyCode.S,Enum.KeyCode.D,Enum.KeyCode.Up,Enum.KeyCode.Left,Enum.KeyCode.Down,Enum.KeyCode.Right,Enum.KeyCode.Slash,Enum.KeyCode.Tab,Enum.KeyCode.Backspace,Enum.KeyCode.Escape}
+--========================================================
+-- Key filters (Orion-compatible)
+--========================================================
+local WhitelistedMouse = { Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton3 }
+local BlacklistedKeys = {
+	Enum.KeyCode.Unknown, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D,
+	Enum.KeyCode.Up, Enum.KeyCode.Left, Enum.KeyCode.Down, Enum.KeyCode.Right,
+	Enum.KeyCode.Slash, Enum.KeyCode.Tab, Enum.KeyCode.Backspace, Enum.KeyCode.Escape
+}
+
 local function CheckKey(tbl, key)
 	for _, v in next, tbl do
 		if v == key then return true end
@@ -408,9 +482,11 @@ local function CheckKey(tbl, key)
 	return false
 end
 
--- Elements
+--========================================================
+-- Base element constructors (kept close to Orion style)
+--========================================================
 CreateElement("Corner", function(scale, offset)
-	return Create("UICorner", {CornerRadius = UDim.new(scale or 0, offset or UI.Corner)})
+	return Create("UICorner", { CornerRadius = UDim.new(scale or 0, offset or UI.Corner) })
 end)
 
 CreateElement("Stroke", function(color, thickness, transparency)
@@ -440,16 +516,16 @@ CreateElement("Padding", function(bottom, left, right, top)
 end)
 
 CreateElement("TFrame", function()
-	return Create("Frame", {BackgroundTransparency = 1, BorderSizePixel = 0})
+	return Create("Frame", { BackgroundTransparency = 1, BorderSizePixel = 0 })
 end)
 
 CreateElement("Frame", function(color)
-	return Create("Frame", {BackgroundColor3 = color or Color3.new(1, 1, 1), BorderSizePixel = 0})
+	return Create("Frame", { BackgroundColor3 = color or Color3.new(1, 1, 1), BorderSizePixel = 0 })
 end)
 
 CreateElement("RoundFrame", function(color, scale, offset)
-	return Create("Frame", {BackgroundColor3 = color or Color3.new(1, 1, 1), BorderSizePixel = 0}, {
-		Create("UICorner", {CornerRadius = UDim.new(scale or 0, offset or UI.Corner)})
+	return Create("Frame", { BackgroundColor3 = color or Color3.new(1, 1, 1), BorderSizePixel = 0 }, {
+		Create("UICorner", { CornerRadius = UDim.new(scale or 0, offset or UI.Corner) })
 	})
 end)
 
@@ -470,19 +546,22 @@ CreateElement("ScrollFrame", function(color, width)
 		ScrollBarThickness = width,
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		ScrollingDirection = Enum.ScrollingDirection.Y,
-		AutomaticCanvasSize = Enum.AutomaticSize.None
+		AutomaticCanvasSize = Enum.AutomaticSize.None,
+		MidImage = "rbxassetid://7445543667",
+		BottomImage = "rbxassetid://7445543667",
+		TopImage = "rbxassetid://7445543667",
 	})
 end)
 
 CreateElement("Image", function(imageId)
-	local img = Create("ImageLabel", {Image = imageId, BackgroundTransparency = 1})
+	local img = Create("ImageLabel", { Image = imageId, BackgroundTransparency = 1, BorderSizePixel = 0 })
 	local icon = GetIcon(imageId)
 	if icon then img.Image = icon end
 	return img
 end)
 
 CreateElement("ImageButton", function(imageId)
-	return Create("ImageButton", {Image = imageId, BackgroundTransparency = 1, AutoButtonColor = false})
+	return Create("ImageButton", { Image = imageId, BackgroundTransparency = 1, AutoButtonColor = false, BorderSizePixel = 0 })
 end)
 
 CreateElement("Label", function(text, textSize, transparency)
@@ -495,24 +574,15 @@ CreateElement("Label", function(text, textSize, transparency)
 		RichText = true,
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Center
+		TextYAlignment = Enum.TextYAlignment.Center,
+		BorderSizePixel = 0
 	})
 end)
 
+--========================================================
 -- Notifications
-local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
-	SetProps(MakeElement("List"), {
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		VerticalAlignment = Enum.VerticalAlignment.Bottom,
-		Padding = UDim.new(0, 8)
-	})
-}), {
-	Position = UDim2.new(1, -24, 1, -24),
-	Size = UDim2.new(0, 320, 1, -24),
-	AnchorPoint = Vector2.new(1, 1),
-	Parent = Nexac
-})
+--========================================================
+local NotificationHolder
 
 function NexacLib:MakeNotification(cfg)
 	task.spawn(function()
@@ -521,6 +591,22 @@ function NexacLib:MakeNotification(cfg)
 		cfg.Content = cfg.Content or "Test"
 		cfg.Image = cfg.Image or "rbxassetid://4384403532"
 		cfg.Time = cfg.Time or 6
+
+		if not NotificationHolder then
+			NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
+				SetProps(MakeElement("List"), {
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					VerticalAlignment = Enum.VerticalAlignment.Bottom,
+					Padding = UDim.new(0, 8)
+				})
+			}), {
+				Position = UDim2.new(1, -24, 1, -24),
+				Size = UDim2.new(0, 320, 1, -24),
+				AnchorPoint = Vector2.new(1, 1),
+				Parent = Nexac
+			})
+		end
 
 		local t = NexacLib.Themes[NexacLib.SelectedTheme]
 
@@ -560,20 +646,24 @@ function NexacLib:MakeNotification(cfg)
 			}), "TextDark")
 		})
 
-		ApplyCard(frame, {shadow = true, transparency = 0.02})
+		ApplyCard(frame, { shadow = true, transparency = 0.02, gradient = true })
 		EnsureStroke(frame, t.Stroke, 1, 0.40)
 
-		TweenService:Create(frame, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-		task.wait(math.max(0.1, cfg.Time - 1.0))
+		TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { Position = UDim2.new(0, 0, 0, 0) }):Play()
 
-		TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.35}):Play()
-		TweenService:Create(frame.Icon, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.6}):Play()
-		TweenService:Create(frame.Title, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.35}):Play()
-		TweenService:Create(frame.Content, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.45}):Play()
+		task.wait(math.max(0.1, cfg.Time - 0.88))
+		TweenService:Create(frame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), { ImageTransparency = 1 }):Play()
+		TweenService:Create(frame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), { BackgroundTransparency = 0.6 }):Play()
+		task.wait(0.3)
 
-		task.wait(0.15)
-		frame:TweenPosition(UDim2.new(1, 60, 0, 0), "In", "Quint", 0.45, true)
-		task.wait(0.6)
+		local s = frame:FindFirstChildOfClass("UIStroke")
+		if s then TweenService:Create(s, TweenInfo.new(0.6, Enum.EasingStyle.Quint), { Transparency = 0.9 }):Play() end
+		TweenService:Create(frame.Title, TweenInfo.new(0.6, Enum.EasingStyle.Quint), { TextTransparency = 0.4 }):Play()
+		TweenService:Create(frame.Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), { TextTransparency = 0.5 }):Play()
+		task.wait(0.05)
+
+		frame:TweenPosition(UDim2.new(1, 20, 0, 0), "In", "Quint", 0.8, true)
+		task.wait(1.35)
 		parent:Destroy()
 	end)
 end
@@ -582,7 +672,7 @@ function NexacLib:Init()
 	if NexacLib.SaveCfg then
 		pcall(function()
 			if isfile and readfile and NexacLib.Folder then
-				local path = NexacLib.Folder .. "/" .. game.GameId .. ".txt"
+				local path = NexacLib.Folder .. "/" .. tostring(game.GameId) .. ".txt"
 				if isfile(path) then
 					LoadCfg(readfile(path))
 					NexacLib:MakeNotification({
@@ -596,14 +686,9 @@ function NexacLib:Init()
 	end
 end
 
-function NexacLib:SetTheme(themeName)
-	if type(themeName) ~= "string" then return end
-	if not NexacLib.Themes[themeName] then return end
-	NexacLib.SelectedTheme = themeName
-	SetTheme()
-end
-
--- Window
+--========================================================
+-- Window / Tabs / Elements (Orion-style API)
+--========================================================
 function NexacLib:MakeWindow(cfg)
 	cfg = cfg or {}
 	cfg.Name = cfg.Name or "Nexac Library"
@@ -626,28 +711,28 @@ function NexacLib:MakeWindow(cfg)
 		end
 	end
 
-	local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
+	local t = NexacLib.Themes[NexacLib.SelectedTheme]
 
 	local FirstTab = true
 	local Minimized = false
 	local UIHidden = false
 
-	-- Main window base
-	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", t.Main or Color3.fromRGB(14, 15, 18), 0, UI.Corner), {
+	-- Main window
+	local MainWindow = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Main, 0, UI.Corner), {
 		Parent = Nexac,
 		Position = UDim2.new(0.5, -360, 0.5, -210),
 		Size = UDim2.new(0, 720, 0, 420),
 		ClipsDescendants = true,
-		ZIndex = 10
-	}), {
+		ZIndex = 10,
+		Name = "NexacWindow"
 	}), "Main")
+	MainWindow.BackgroundTransparency = 0
+	ApplyCard(MainWindow, { shadow = true, transparency = 0.0, gradient = true })
 
-	ApplyCard(MainWindow, {shadow = true, transparency = 0.00, gradient = true})
-	
-	-- Add to Windows table for UI visibility tracking
 	table.insert(NexacLib.Windows, MainWindow)
+	SetZIndexRecursive(MainWindow, 10)
 
-	-- TopBar
+	-- TopBar / drag point
 	local DragPoint = SetProps(MakeElement("TFrame"), {
 		Size = UDim2.new(1, 0, 0, 56),
 		Name = "DragPoint",
@@ -665,19 +750,18 @@ function NexacLib:MakeWindow(cfg)
 		Position = UDim2.new(0, 20, 0, 0),
 		Size = UDim2.new(1, -220, 1, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Name = "WindowName"
+		Name = "WindowName",
+		Parent = TopBar
 	}), "Text")
-
-	Title.Parent = TopBar
 
 	local SubLine = AddThemeObject(SetProps(MakeElement("Frame"), {
 		Size = UDim2.new(1, 0, 0, 1),
 		Position = UDim2.new(0, 0, 1, -1),
-		BackgroundTransparency = 0.15
+		BackgroundTransparency = 0.15,
+		Parent = TopBar
 	}), "Stroke")
-	SubLine.Parent = TopBar
 
-	-- Buttons container
+	-- buttons
 	local BtnWrap = SetProps(MakeElement("RoundFrame", t.Second, 0, 10), {
 		Size = UDim2.new(0, 92, 0, 34),
 		Position = UDim2.new(1, -20, 0, 11),
@@ -685,15 +769,15 @@ function NexacLib:MakeWindow(cfg)
 		Parent = TopBar,
 		ZIndex = 11
 	})
-	ApplyCard(BtnWrap, {shadow = false, transparency = 0.05, gradient = true})
+	ApplyCard(BtnWrap, { shadow = false, transparency = 0.05, gradient = true })
 	EnsureStroke(BtnWrap, t.Stroke, 1, 0.55)
 
 	local Divider = AddThemeObject(SetProps(MakeElement("Frame"), {
 		Size = UDim2.new(0, 1, 1, 0),
 		Position = UDim2.new(0.5, 0, 0, 0),
-		BackgroundTransparency = 0.2
+		BackgroundTransparency = 0.2,
+		Parent = BtnWrap
 	}), "Stroke")
-	Divider.Parent = BtnWrap
 
 	local CloseBtn = SetProps(MakeElement("Button"), {
 		Size = UDim2.new(0.5, 0, 1, 0),
@@ -710,18 +794,18 @@ function NexacLib:MakeWindow(cfg)
 		Size = UDim2.new(1, 0, 1, 0),
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Font = Enum.Font.GothamBold,
-		TextTransparency = 0.05
+		TextTransparency = 0.05,
+		Parent = CloseBtn
 	}), "Text")
-	CloseIco.Parent = CloseBtn
 
 	local MinIco = AddThemeObject(SetProps(MakeElement("Label", "—", 16), {
 		Size = UDim2.new(1, 0, 1, 0),
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Font = Enum.Font.GothamBold,
 		TextTransparency = 0.10,
-		Name = "Ico"
+		Name = "Ico",
+		Parent = MinBtn
 	}), "Text")
-	MinIco.Parent = MinBtn
 
 	-- Sidebar
 	local Sidebar = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Second, 0, UI.Corner), {
@@ -731,20 +815,19 @@ function NexacLib:MakeWindow(cfg)
 		Name = "Sidebar",
 		ZIndex = 10
 	}), "Second")
-	ApplyCard(Sidebar, {shadow = false, transparency = 0.02, gradient = true})
+	ApplyCard(Sidebar, { shadow = false, transparency = 0.02, gradient = true })
 	EnsureStroke(Sidebar, t.Stroke, 1, 0.50)
 
-	-- Sidebar: profile footer
+	-- Profile footer
 	local Profile = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Main, 0, 10), {
 		Size = UDim2.new(1, -16, 0, 54),
 		Position = UDim2.new(0, 8, 1, -62),
 		Parent = Sidebar,
 		ZIndex = 11
 	}), "Main")
-	ApplyCard(Profile, {shadow = false, transparency = 0.15, gradient = true})
+	ApplyCard(Profile, { shadow = false, transparency = 0.15, gradient = true })
 	EnsureStroke(Profile, t.Stroke, 1, 0.65)
 
-	-- PATCHED: use rbxthumb (not https)
 	local Avatar = SetProps(MakeElement("Image", ("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150"):format(LocalPlayer.UserId)), {
 		Size = UDim2.new(0, 34, 0, 34),
 		Position = UDim2.new(0, 10, 0.5, 0),
@@ -786,7 +869,7 @@ function NexacLib:MakeWindow(cfg)
 		TabHolder.CanvasSize = UDim2.new(0, 0, 0, TabHolder.UIListLayout.AbsoluteContentSize.Y + 12)
 	end)
 
-	-- Content container (right)
+	-- Right side content host
 	local ContentHost = AddThemeObject(SetProps(MakeElement("TFrame"), {
 		Size = UDim2.new(1, -190, 1, -56),
 		Position = UDim2.new(0, 190, 0, 56),
@@ -794,7 +877,6 @@ function NexacLib:MakeWindow(cfg)
 		Name = "ContentHost"
 	}), "Main")
 
-	-- Icon on title
 	if cfg.ShowIcon then
 		SetProps(MakeElement("Image", cfg.Icon), {
 			Size = UDim2.new(0, 20, 0, 20),
@@ -898,27 +980,27 @@ function NexacLib:MakeWindow(cfg)
 		LoadSequence()
 	end
 
-	-- Tab factory (same API)
+	-- Tab factory
 	local TabFunction = {}
+
 	function TabFunction:MakeTab(tabCfg)
 		tabCfg = tabCfg or {}
 		tabCfg.Name = tabCfg.Name or "Tab"
 		tabCfg.Icon = tabCfg.Icon or ""
 		tabCfg.PremiumOnly = tabCfg.PremiumOnly or false
 
-		local t = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
-
 		local TabHit = SetProps(MakeElement("Button"), {
 			Size = UDim2.new(1, 0, 0, 40),
 			Parent = TabHolder
 		})
+		SetZIndexRecursive(TabHit, 11)
 
-		local TabCard = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Second or Color3.fromRGB(22, 23, 28), 0, 10), {
+		local TabCard = AddThemeObject(SetProps(MakeElement("RoundFrame", t.Second, 0, 10), {
 			Size = UDim2.new(1, 0, 1, 0),
 			Parent = TabHit,
 			BackgroundTransparency = 0.10
 		}), "Second")
-		ApplyCard(TabCard, {shadow = false, transparency = 0.10, gradient = true})
+		ApplyCard(TabCard, { shadow = false, transparency = 0.10, gradient = true })
 
 		local Ico = AddThemeObject(SetProps(MakeElement("Image", tabCfg.Icon), {
 			Size = UDim2.new(0, 18, 0, 18),
@@ -941,9 +1023,9 @@ function NexacLib:MakeWindow(cfg)
 			Parent = TabCard
 		}), "Text")
 
-		ApplyHitEffects(TabHit, TabCard, {accentStroke = true})
+		ApplyHitEffects(TabHit, TabCard, { accentStroke = true })
 
-		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", t.Divider or Color3.fromRGB(46, 48, 60), 6), {
+		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", t.Divider, 6), {
 			Size = UDim2.new(1, 0, 1, 0),
 			Parent = ContentHost,
 			Visible = false,
@@ -964,23 +1046,24 @@ function NexacLib:MakeWindow(cfg)
 			Txt.TextTransparency = 0
 			Txt.Font = Enum.Font.GothamBold
 			Container.Visible = true
-			EnsureStroke(TabCard, t.Accent or Color3.fromRGB(124, 92, 255), 1.6, 0.15)
+			EnsureStroke(TabCard, t.Accent, 1.6, 0.15)
 		end
 
 		AddConnection(TabHit.MouseButton1Click, function()
+			-- reset all tab styles
 			for _, btn in next, TabHolder:GetChildren() do
 				if btn:IsA("TextButton") then
 					local card = btn:FindFirstChildOfClass("Frame")
 					if card then
 						local ico2 = card:FindFirstChild("Ico")
 						local title2 = card:FindFirstChild("Title")
-						if ico2 then TweenService:Create(ico2, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.35}):Play() end
+						if ico2 then TweenService:Create(ico2, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { ImageTransparency = 0.35 }):Play() end
 						if title2 then
 							title2.Font = Enum.Font.GothamSemibold
-							TweenService:Create(title2, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.30}):Play()
+							TweenService:Create(title2, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { TextTransparency = 0.30 }):Play()
 						end
 						local s = card:FindFirstChildOfClass("UIStroke")
-						if s then TweenService:Create(s, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Transparency = 0.65, Color = t.Stroke}):Play() end
+						if s then TweenService:Create(s, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Transparency = 0.65, Color = t.Stroke }):Play() end
 					end
 				end
 			end
@@ -991,28 +1074,31 @@ function NexacLib:MakeWindow(cfg)
 				end
 			end
 
-			TweenService:Create(Ico, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.0}):Play()
-			TweenService:Create(Txt, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.0}):Play()
+			TweenService:Create(Ico, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { ImageTransparency = 0.0 }):Play()
+			TweenService:Create(Txt, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { TextTransparency = 0.0 }):Play()
 			Txt.Font = Enum.Font.GothamBold
-			local s = EnsureStroke(TabCard, t.Accent or Color3.fromRGB(124, 92, 255), 1.6, 0.15)
+			local s = EnsureStroke(TabCard, t.Accent, 1.6, 0.15)
 			s.Transparency = 0.15
 			Container.Visible = true
 		end)
 
-		-- FULL ELEMENT IMPLEMENTATION (restored)
+		--========================================================
+		-- Elements Implementation
+		--========================================================
 		local function GetElements(ItemParent)
 			local ElementFunction = {}
-			local t2 = NexacLib.Themes[NexacLib.SelectedTheme] or NexacLib.Themes.Default
+			local t2 = NexacLib.Themes[NexacLib.SelectedTheme]
 
 			local function NewElementFrame(height)
-				local frame = AddThemeObject(SetProps(MakeElement("RoundFrame", t2.Second or Color3.fromRGB(22, 23, 28), 0, 10), {
+				local f = AddThemeObject(SetProps(MakeElement("RoundFrame", t2.Second, 0, 10), {
 					Size = UDim2.new(1, 0, 0, height),
 					Parent = ItemParent,
 					ClipsDescendants = true
 				}), "Second")
-				ApplyCard(frame, {shadow = false, transparency = 0.10, gradient = true})
-				EnsureStroke(frame, t2.Stroke or Color3.fromRGB(64, 66, 80), 1, 0.55)
-				return frame
+				f.BackgroundTransparency = 0.10
+				ApplyCard(f, { shadow = false, transparency = 0.10, gradient = true })
+				EnsureStroke(f, t2.Stroke, 1, 0.55)
+				return f
 			end
 
 			-- Label
@@ -1097,8 +1183,7 @@ function NexacLib:MakeWindow(cfg)
 					Size = UDim2.new(1, 0, 1, 0),
 					Parent = f
 				})
-
-				ApplyHitEffects(click, f, {accentStroke = true})
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				AddConnection(click.MouseButton1Up, function()
 					task.spawn(cfg3.Callback)
@@ -1119,7 +1204,7 @@ function NexacLib:MakeWindow(cfg)
 				cfg3.Flag = cfg3.Flag or nil
 				cfg3.Save = cfg3.Save or false
 
-				local Toggle = {Value = cfg3.Default, Save = cfg3.Save, Type = "Toggle"}
+				local Toggle = { Value = cfg3.Default, Save = cfg3.Save, Type = "Toggle" }
 
 				local f = NewElementFrame(42)
 
@@ -1137,7 +1222,7 @@ function NexacLib:MakeWindow(cfg)
 					AnchorPoint = Vector2.new(1, 0.5),
 					Parent = f
 				})
-				ApplyCard(box, {shadow = false, transparency = 0.08, gradient = true})
+				ApplyCard(box, { shadow = false, transparency = 0.08, gradient = true })
 				EnsureStroke(box, t2.Stroke, 1, 0.55)
 
 				local knob = SetProps(MakeElement("RoundFrame", t2.Stroke, 0, 10), {
@@ -1146,14 +1231,11 @@ function NexacLib:MakeWindow(cfg)
 					AnchorPoint = Vector2.new(0, 0.5),
 					Parent = box
 				})
-				ApplyCard(knob, {shadow = false, transparency = 0.0, gradient = false})
+				ApplyCard(knob, { shadow = false, transparency = 0.0, gradient = false })
 				EnsureStroke(knob, t2.Stroke, 1, 0.65)
 
-				local click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0),
-					Parent = f
-				})
-				ApplyHitEffects(click, f, {accentStroke = true})
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = f })
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				function Toggle:Set(v)
 					Toggle.Value = not not v
@@ -1198,7 +1280,7 @@ function NexacLib:MakeWindow(cfg)
 				cfg3.Flag = cfg3.Flag or nil
 				cfg3.Save = cfg3.Save or false
 
-				local Slider = {Value = cfg3.Default, Save = cfg3.Save, Type = "Slider"}
+				local Slider = { Value = cfg3.Default, Save = cfg3.Save, Type = "Slider" }
 				local dragging = false
 
 				local f = NewElementFrame(68)
@@ -1216,14 +1298,14 @@ function NexacLib:MakeWindow(cfg)
 					Position = UDim2.new(0, 12, 0, 34),
 					Parent = f
 				})
-				ApplyCard(bar, {shadow = false, transparency = 0.10, gradient = true})
+				ApplyCard(bar, { shadow = false, transparency = 0.10, gradient = true })
 				EnsureStroke(bar, t2.Stroke, 1, 0.55)
 
 				local fill = SetProps(MakeElement("RoundFrame", cfg3.Color, 0, 8), {
 					Size = UDim2.new(0, 0, 1, 0),
 					Parent = bar
 				})
-				ApplyCard(fill, {shadow = false, transparency = 0.25, gradient = false})
+				ApplyCard(fill, { shadow = false, transparency = 0.25, gradient = false })
 				EnsureStroke(fill, cfg3.Color, 1, 0.65)
 
 				local valueLbl = AddThemeObject(SetProps(MakeElement("Label", "", 13), {
@@ -1246,7 +1328,7 @@ function NexacLib:MakeWindow(cfg)
 				function Slider:Set(v)
 					v = math.clamp(Round(v, cfg3.Increment), cfg3.Min, cfg3.Max)
 					Slider.Value = v
-					local pct = (v - cfg3.Min) / (cfg3.Max - cfg3.Min)
+					local pct = (cfg3.Max == cfg3.Min) and 0 or ((v - cfg3.Min) / (cfg3.Max - cfg3.Min))
 					TweenService:Create(fill, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 						Size = UDim2.fromScale(pct, 1)
 					}):Play()
@@ -1276,7 +1358,7 @@ function NexacLib:MakeWindow(cfg)
 				return Slider
 			end
 
-			-- Dropdown
+			-- Dropdown (single)
 			function ElementFunction:AddDropdown(cfg3)
 				cfg3 = cfg3 or {}
 				cfg3.Name = cfg3.Name or "Dropdown"
@@ -1294,8 +1376,8 @@ function NexacLib:MakeWindow(cfg)
 					Type = "Dropdown",
 					Save = cfg3.Save
 				}
-				local MaxElements = 6
 
+				local MaxElements = 6
 				if not table.find(Dropdown.Options, Dropdown.Value) then
 					Dropdown.Value = "..."
 				end
@@ -1317,7 +1399,7 @@ function NexacLib:MakeWindow(cfg)
 				}), "Text")
 
 				local selected = AddThemeObject(SetProps(MakeElement("Label", "", 13), {
-					Size = UDim2.new(0, 120, 1, 0),
+					Size = UDim2.new(0, 170, 1, 0),
 					Position = UDim2.new(1, -42, 0, 0),
 					AnchorPoint = Vector2.new(1, 0),
 					Font = Enum.Font.GothamMedium,
@@ -1366,11 +1448,8 @@ function NexacLib:MakeWindow(cfg)
 					container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 				end)
 
-				local click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0),
-					Parent = header
-				})
-				ApplyHitEffects(click, f, {accentStroke = true})
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = header })
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				local function addOptions(opts)
 					for _, opt in ipairs(opts) do
@@ -1384,7 +1463,7 @@ function NexacLib:MakeWindow(cfg)
 							Parent = optBtn,
 							BackgroundTransparency = 0.10
 						})
-						ApplyCard(optCard, {shadow = false, transparency = 0.10, gradient = true})
+						ApplyCard(optCard, { shadow = false, transparency = 0.10, gradient = true })
 						EnsureStroke(optCard, t2.Stroke, 1, 0.65)
 
 						local optLbl = AddThemeObject(SetProps(MakeElement("Label", tostring(opt), 13), {
@@ -1401,7 +1480,7 @@ function NexacLib:MakeWindow(cfg)
 							SaveCfg(game.GameId)
 						end)
 
-						Dropdown.Buttons[opt] = {Btn = optBtn, Card = optCard, Label = optLbl}
+						Dropdown.Buttons[opt] = { Btn = optBtn, Card = optCard, Label = optLbl }
 					end
 				end
 
@@ -1410,7 +1489,6 @@ function NexacLib:MakeWindow(cfg)
 						for _, v in pairs(Dropdown.Buttons) do
 							pcall(function() v.Btn:Destroy() end)
 						end
-						table.clear(Dropdown.Options)
 						table.clear(Dropdown.Buttons)
 					end
 					Dropdown.Options = opts or {}
@@ -1457,11 +1535,222 @@ function NexacLib:MakeWindow(cfg)
 					}):Play()
 				end)
 
-				Dropdown:Refresh(Dropdown.Options, false)
+				Dropdown:Refresh(Dropdown.Options, true)
 				Dropdown:Set(Dropdown.Value)
 
 				if cfg3.Flag then NexacLib.Flags[cfg3.Flag] = Dropdown end
 				return Dropdown
+			end
+
+			-- MultiDropdown (Orion-style extension)
+			function ElementFunction:AddMultiDropdown(cfg3)
+				cfg3 = cfg3 or {}
+				cfg3.Name = cfg3.Name or "MultiDropdown"
+				cfg3.Options = cfg3.Options or {}
+				cfg3.Default = cfg3.Default or {}
+				cfg3.Callback = cfg3.Callback or function() end
+				cfg3.Flag = cfg3.Flag or nil
+				cfg3.Save = cfg3.Save or false
+
+				local Multi = {
+					Value = {},
+					Options = cfg3.Options,
+					Buttons = {},
+					Toggled = false,
+					Type = "Dropdown",
+					Save = cfg3.Save,
+					Multi = true
+				}
+
+				-- initialize set
+				local function setInit(def)
+					Multi.Value = {}
+					if type(def) == "table" then
+						for _, v in ipairs(def) do
+							if table.find(Multi.Options, v) then
+								Multi.Value[v] = true
+							end
+						end
+					end
+				end
+				setInit(cfg3.Default)
+
+				local f = NewElementFrame(42)
+
+				local header = SetProps(MakeElement("TFrame"), {
+					Size = UDim2.new(1, 0, 0, 42),
+					Parent = f,
+					Name = "Header"
+				})
+
+				AddThemeObject(SetProps(MakeElement("Label", cfg3.Name, 14), {
+					Size = UDim2.new(1, -90, 1, 0),
+					Position = UDim2.new(0, 12, 0, 0),
+					Font = Enum.Font.GothamBold,
+					Name = "Content",
+					Parent = header
+				}), "Text")
+
+				local selected = AddThemeObject(SetProps(MakeElement("Label", "", 13), {
+					Size = UDim2.new(0, 170, 1, 0),
+					Position = UDim2.new(1, -42, 0, 0),
+					AnchorPoint = Vector2.new(1, 0),
+					Font = Enum.Font.GothamMedium,
+					TextXAlignment = Enum.TextXAlignment.Right,
+					Name = "Selected",
+					TextTransparency = 0.25,
+					Parent = header
+				}), "TextDark")
+
+				local arrow = AddThemeObject(SetProps(MakeElement("Label", "▾", 16), {
+					Size = UDim2.new(0, 24, 1, 0),
+					Position = UDim2.new(1, -12, 0, 0),
+					AnchorPoint = Vector2.new(1, 0),
+					TextXAlignment = Enum.TextXAlignment.Center,
+					Font = Enum.Font.GothamBold,
+					Name = "Arrow",
+					TextTransparency = 0.15,
+					Parent = header
+				}), "Text")
+
+				local line = AddThemeObject(SetProps(MakeElement("Frame"), {
+					Size = UDim2.new(1, 0, 0, 1),
+					Position = UDim2.new(0, 0, 1, -1),
+					Name = "Line",
+					Visible = false,
+					BackgroundTransparency = 0.2,
+					Parent = header
+				}), "Stroke")
+
+				local listLayout = MakeElement("List", 0, 6)
+
+				local container = SetChildren(SetProps(MakeElement("ScrollFrame", t2.Divider, 5), {
+					Parent = f,
+					Position = UDim2.new(0, 0, 0, 42),
+					Size = UDim2.new(1, 0, 0, 0),
+					ClipsDescendants = true,
+					Visible = false,
+					ScrollBarThickness = 4,
+					Name = "DropdownContainer"
+				}), {
+					listLayout,
+					MakeElement("Padding", 10, 12, 12, 10)
+				})
+
+				AddConnection(listLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+					container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+				end)
+
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = header })
+				ApplyHitEffects(click, f, { accentStroke = true })
+
+				local function formatSelected()
+					local out = {}
+					for opt, on in pairs(Multi.Value) do
+						if on then table.insert(out, tostring(opt)) end
+					end
+					table.sort(out)
+					if #out == 0 then
+						return "..."
+					end
+					-- show first few
+					local show = {}
+					for i = 1, math.min(3, #out) do
+						table.insert(show, out[i])
+					end
+					local s = table.concat(show, ", ")
+					if #out > 3 then s = s .. (" +" .. tostring(#out - 3)) end
+					return s
+				end
+
+				local function updateSelectedLabel()
+					selected.Text = formatSelected()
+				end
+
+				local function addOptions(opts)
+					for _, opt in ipairs(opts) do
+						local optBtn = SetProps(MakeElement("Button"), {
+							Size = UDim2.new(1, 0, 0, 30),
+							Parent = container
+						})
+
+						local optCard = SetProps(MakeElement("RoundFrame", t2.Main, 0, 8), {
+							Size = UDim2.new(1, 0, 1, 0),
+							Parent = optBtn,
+							BackgroundTransparency = 0.10
+						})
+						ApplyCard(optCard, { shadow = false, transparency = 0.10, gradient = true })
+						EnsureStroke(optCard, t2.Stroke, 1, 0.65)
+
+						local optLbl = AddThemeObject(SetProps(MakeElement("Label", tostring(opt), 13), {
+							Size = UDim2.new(1, -16, 1, 0),
+							Position = UDim2.new(0, 10, 0, 0),
+							Font = Enum.Font.GothamMedium,
+							Name = "Title",
+							TextTransparency = 0.25,
+							Parent = optCard
+						}), "TextDark")
+
+						local function repaint()
+							local active = Multi.Value[opt] == true
+							optLbl.TextTransparency = active and 0.0 or 0.25
+							EnsureStroke(optCard, active and t2.Accent2 or t2.Stroke, 1, active and 0.25 or 0.65)
+						end
+						repaint()
+
+						AddConnection(optBtn.MouseButton1Click, function()
+							Multi.Value[opt] = not Multi.Value[opt]
+							repaint()
+							updateSelectedLabel()
+							cfg3.Callback(Multi:Get())
+							SaveCfg(game.GameId)
+						end)
+
+						Multi.Buttons[opt] = { Btn = optBtn, Card = optCard, Label = optLbl, Repaint = repaint }
+					end
+				end
+
+				function Multi:Get()
+					local out = {}
+					for opt, on in pairs(Multi.Value) do
+						if on then table.insert(out, opt) end
+					end
+					table.sort(out, function(a,b) return tostring(a) < tostring(b) end)
+					return out
+				end
+
+				function Multi:Set(list)
+					setInit(list)
+					for _, o in pairs(Multi.Buttons) do
+						pcall(function() o.Repaint() end)
+					end
+					updateSelectedLabel()
+					cfg3.Callback(Multi:Get())
+				end
+
+				addOptions(Multi.Options)
+				updateSelectedLabel()
+
+				AddConnection(click.MouseButton1Click, function()
+					Multi.Toggled = not Multi.Toggled
+					line.Visible = Multi.Toggled
+					container.Visible = Multi.Toggled
+					arrow.Text = Multi.Toggled and "▴" or "▾"
+
+					local maxH = 6 * 36
+					local full = listLayout.AbsoluteContentSize.Y + 20
+					local targetH = Multi.Toggled and math.min(maxH, full) or 0
+
+					TweenService:Create(f, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+						Size = UDim2.new(1, 0, 0, 42 + targetH)
+					}):Play()
+					TweenService:Create(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+						Size = UDim2.new(1, 0, 0, targetH)
+					}):Play()
+				end)
+
+				if cfg3.Flag then NexacLib.Flags[cfg3.Flag] = Multi end
+				return Multi
 			end
 
 			-- Bind
@@ -1474,7 +1763,7 @@ function NexacLib:MakeWindow(cfg)
 				cfg3.Flag = cfg3.Flag or nil
 				cfg3.Save = cfg3.Save or false
 
-				local Bind = {Value = nil, Binding = false, Type = "Bind", Save = cfg3.Save}
+				local Bind = { Value = nil, Binding = false, Type = "Bind", Save = cfg3.Save }
 				local holding = false
 
 				local f = NewElementFrame(42)
@@ -1493,7 +1782,7 @@ function NexacLib:MakeWindow(cfg)
 					AnchorPoint = Vector2.new(1, 0.5),
 					Parent = f
 				})
-				ApplyCard(box, {shadow = false, transparency = 0.10, gradient = true})
+				ApplyCard(box, { shadow = false, transparency = 0.10, gradient = true })
 				EnsureStroke(box, t2.Stroke, 1, 0.55)
 
 				local valLbl = AddThemeObject(SetProps(MakeElement("Label", "", 13), {
@@ -1504,8 +1793,8 @@ function NexacLib:MakeWindow(cfg)
 					Parent = box
 				}), "Text")
 
-				local click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0), Parent = f})
-				ApplyHitEffects(click, f, {accentStroke = true})
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = f })
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				function Bind:Set(key)
 					Bind.Binding = false
@@ -1588,12 +1877,12 @@ function NexacLib:MakeWindow(cfg)
 				}), "Text")
 
 				local box = SetProps(MakeElement("RoundFrame", t2.Main, 0, 8), {
-					Size = UDim2.new(0, 120, 0, 26),
+					Size = UDim2.new(0, 160, 0, 26),
 					Position = UDim2.new(1, -12, 0.5, 0),
 					AnchorPoint = Vector2.new(1, 0.5),
 					Parent = f
 				})
-				ApplyCard(box, {shadow = false, transparency = 0.10, gradient = true})
+				ApplyCard(box, { shadow = false, transparency = 0.10, gradient = true })
 				EnsureStroke(box, t2.Stroke, 1, 0.55)
 
 				local tb = AddThemeObject(Instance.new("TextBox"), "Text")
@@ -1608,8 +1897,8 @@ function NexacLib:MakeWindow(cfg)
 				tb.TextXAlignment = Enum.TextXAlignment.Center
 				tb.Parent = box
 
-				local click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0), Parent = f})
-				ApplyHitEffects(click, f, {accentStroke = true})
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = f })
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				AddConnection(click.MouseButton1Up, function()
 					tb:CaptureFocus()
@@ -1619,6 +1908,13 @@ function NexacLib:MakeWindow(cfg)
 					cfg3.Callback(tb.Text)
 					if cfg3.TextDisappear then tb.Text = "" end
 				end)
+
+				local api = {}
+				function api:Set(v)
+					tb.Text = tostring(v)
+					cfg3.Callback(tb.Text)
+				end
+				return api
 			end
 
 			-- Colorpicker
@@ -1630,7 +1926,7 @@ function NexacLib:MakeWindow(cfg)
 				cfg3.Flag = cfg3.Flag or nil
 				cfg3.Save = cfg3.Save or false
 
-				local Colorpicker = {Value = cfg3.Default, Toggled = false, Type = "Colorpicker", Save = cfg3.Save}
+				local Colorpicker = { Value = cfg3.Default, Toggled = false, Type = "Colorpicker", Save = cfg3.Save }
 				local ColorH, ColorS, ColorV = Color3.toHSV(Colorpicker.Value)
 
 				local f = NewElementFrame(42)
@@ -1649,7 +1945,7 @@ function NexacLib:MakeWindow(cfg)
 					AnchorPoint = Vector2.new(1, 0.5),
 					Parent = f
 				})
-				ApplyCard(preview, {shadow = false, transparency = 0.0, gradient = false})
+				ApplyCard(preview, { shadow = false, transparency = 0.0, gradient = false })
 				EnsureStroke(preview, t2.Stroke, 1, 0.55)
 
 				local line = AddThemeObject(SetProps(MakeElement("Frame"), {
@@ -1714,6 +2010,11 @@ function NexacLib:MakeWindow(cfg)
 
 				local colorInputConn, hueInputConn
 
+				local function syncSelectors()
+					sel.Position = UDim2.new(ColorS, 0, 1 - ColorV, 0)
+					hueSel.Position = UDim2.new(0.5, 0, 1 - ColorH, 0)
+				end
+
 				local function updateUI()
 					local c = Color3.fromHSV(ColorH, ColorS, ColorV)
 					Colorpicker.Value = c
@@ -1726,14 +2027,8 @@ function NexacLib:MakeWindow(cfg)
 				function Colorpicker:Set(v)
 					Colorpicker.Value = v
 					ColorH, ColorS, ColorV = Color3.toHSV(v)
-					sel.Position = UDim2.new(ColorS, 0, 1 - ColorV, 0)
-					hueSel.Position = UDim2.new(0.5, 0, 1 - ColorH, 0)
+					syncSelectors()
 					updateUI()
-				end
-
-				local function syncSelectors()
-					sel.Position = UDim2.new(ColorS, 0, 1 - ColorV, 0)
-					hueSel.Position = UDim2.new(0.5, 0, 1 - ColorH, 0)
 				end
 
 				syncSelectors()
@@ -1773,8 +2068,8 @@ function NexacLib:MakeWindow(cfg)
 					if hueInputConn then hueInputConn:Disconnect(); hueInputConn = nil end
 				end)
 
-				local click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0), Parent = f})
-				ApplyHitEffects(click, f, {accentStroke = true})
+				local click = SetProps(MakeElement("Button"), { Size = UDim2.new(1, 0, 1, 0), Parent = f })
+				ApplyHitEffects(click, f, { accentStroke = true })
 
 				AddConnection(click.MouseButton1Up, function()
 					Colorpicker.Toggled = not Colorpicker.Toggled
@@ -1826,7 +2121,78 @@ function NexacLib:MakeWindow(cfg)
 					wrap.Size = UDim2.new(1, 0, 0, holder.UIListLayout.AbsoluteContentSize.Y + 28)
 				end)
 
+				-- returns a fresh element table bound to the section holder
 				return GetElements(holder)
+			end
+
+			-- SearchBox (filters siblings under ItemParent / Section holder)
+			function ElementFunction:AddSearchBox(cfg3)
+				cfg3 = cfg3 or {}
+				cfg3.Name = cfg3.Name or "Search"
+				cfg3.Placeholder = cfg3.Placeholder or "Search..."
+				cfg3.Callback = cfg3.Callback or function(_) end
+
+				local f = NewElementFrame(42)
+
+				AddThemeObject(SetProps(MakeElement("Label", cfg3.Name, 14), {
+					Size = UDim2.new(0, 120, 1, 0),
+					Position = UDim2.new(0, 12, 0, 0),
+					Font = Enum.Font.GothamBold,
+					Name = "Content",
+					Parent = f
+				}), "Text")
+
+				local box = SetProps(MakeElement("RoundFrame", t2.Main, 0, 8), {
+					Size = UDim2.new(1, -150, 0, 26),
+					Position = UDim2.new(1, -12, 0.5, 0),
+					AnchorPoint = Vector2.new(1, 0.5),
+					Parent = f
+				})
+				ApplyCard(box, { shadow = false, transparency = 0.10, gradient = true })
+				EnsureStroke(box, t2.Stroke, 1, 0.55)
+
+				local tb = AddThemeObject(Instance.new("TextBox"), "Text")
+				tb.Size = UDim2.new(1, -10, 1, 0)
+				tb.Position = UDim2.new(0, 5, 0, 0)
+				tb.BackgroundTransparency = 1
+				tb.ClearTextOnFocus = false
+				tb.PlaceholderText = cfg3.Placeholder
+				tb.Text = ""
+				tb.Font = Enum.Font.GothamMedium
+				tb.TextSize = 13
+				tb.TextXAlignment = Enum.TextXAlignment.Left
+				tb.Parent = box
+
+				local function applyFilter(q)
+					q = tostring(q or ""):lower()
+					for _, child in ipairs(ItemParent:GetChildren()) do
+						if child:IsA("Frame") or child:IsA("TextButton") then
+							local ok = true
+							if q ~= "" then
+								ok = false
+								local label = child:FindFirstChild("Content", true) or child:FindFirstChild("Title", true)
+								if label and label:IsA("TextLabel") then
+									ok = tostring(label.Text):lower():find(q, 1, true) ~= nil
+								end
+							end
+							if child ~= f then
+								child.Visible = ok
+							end
+						end
+					end
+				end
+
+				AddConnection(tb:GetPropertyChangedSignal("Text"), function()
+					applyFilter(tb.Text)
+					cfg3.Callback(tb.Text)
+				end)
+
+				local api = {}
+				function api:Set(v)
+					tb.Text = tostring(v or "")
+					applyFilter(tb.Text)
+				end
+				return api
 			end
 
 			return ElementFunction
@@ -1837,7 +2203,7 @@ function NexacLib:MakeWindow(cfg)
 			ElementFunction[k] = v
 		end
 
-		-- Premium-only lockout behavior kept (no-op creators)
+		-- Premium-only behavior: no-op creators
 		if tabCfg.PremiumOnly then
 			for k in pairs(ElementFunction) do
 				ElementFunction[k] = function() end
@@ -1851,11 +2217,21 @@ function NexacLib:MakeWindow(cfg)
 		return ElementFunction
 	end
 
+	-- optional window methods
+	TabFunction.SetTheme = function(_, themeName)
+		NexacLib:SetTheme(themeName)
+	end
+
+	TabFunction.Toggle = function()
+		MainWindow.Visible = not MainWindow.Visible
+		NexacLib.UI.Enabled = MainWindow.Visible
+	end
+
 	return TabFunction
 end
 
 function NexacLib:Destroy()
-	Nexac:Destroy()
+	pcall(function() Nexac:Destroy() end)
 end
 
 return NexacLib
