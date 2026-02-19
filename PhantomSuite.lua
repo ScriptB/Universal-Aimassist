@@ -1603,11 +1603,13 @@ task.spawn(function()
 		warn("UI creation failed - Script loaded but UI unavailable")
 	end
 	
-	-- ==================== FUNCTIONAL LOGIC ====================
+	-- ==================== FUNCTIONAL LOGIC FROM V3.3 ====================
 	
-	-- Core variables from working version
-	local currentTarget = nil
-	local aiming = false
+	-- ESP Data and Drawing Objects
+	local ESPData = {}
+	local QUAD_SUPPORTED = pcall(function() Drawing.new("Quad"):Remove() end)
+	local ESPDrawings = {}
+	local espWasEnabled = false
 	
 	-- Helper functions from working version
 	local function getRootPart(character)
@@ -1880,203 +1882,336 @@ task.spawn(function()
 		end
 	end)
 	
-	-- ESP functionality
-	local espObjects = {}
-	
-	local function createESP(player)
-		if espObjects[player] then return end
-		
-		local character = player.Character
-		if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-		
-		local esp = {}
-		
-		-- Box ESP
-		if boxEsp then
-			local box = Drawing.new("Square")
-			box.Color = espColor
-			box.Thickness = 2
-			box.Transparency = 0.5
-			esp.box = box
+	-- ESP functions from working version
+	local function newDrawing(dtype, props)
+		local d = Drawing.new(dtype)
+		ESPDrawings[d] = true
+		for k, v in pairs(props) do
+			pcall(function() d[k] = v end)
 		end
-		
-		-- Name ESP
-		if nameEsp then
-			local name = Drawing.new("Text")
-			name.Color = espColor
-			name.Size = 14
-			name.Center = true
-			name.Outline = true
-			esp.name = name
-		end
-		
-		-- Health ESP
-		if healthEsp then
-			local health = Drawing.new("Text")
-			health.Color = Color3.fromRGB(0, 255, 0)
-			health.Size = 12
-			health.Center = true
-			health.Outline = true
-			esp.health = health
-		end
-		
-		-- Distance ESP
-		if distanceEsp then
-			local distance = Drawing.new("Text")
-			distance.Color = Color3.fromRGB(255, 255, 0)
-			distance.Size = 12
-			distance.Center = true
-			distance.Outline = true
-			esp.distance = distance
-		end
-		
-		-- Tracer ESP
-		if tracerEsp then
-			local tracer = Drawing.new("Line")
-			tracer.Color = espColor
-			tracer.Thickness = 1
-			tracer.Transparency = 0.3
-			esp.tracer = tracer
-		end
-		
-		espObjects[player] = esp
+		return d
 	end
 	
-	local function removeESP(player)
-		if espObjects[player] then
-			for _, obj in pairs(espObjects[player]) do
-				if obj.Remove then
-					obj:Remove()
-				end
-			end
-			espObjects[player] = nil
-		end
+	local function espIsTeammate(target)
+		if not teamCheck then return false end
+		local _, targetPlayer = resolveCharacter(target)
+		if not targetPlayer then return false end
+		return isOnSameTeam(targetPlayer)
 	end
 	
-	local function updateESP()
-		for player, esp in pairs(espObjects) do
-			if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-				removeESP(player)
-				continue
+	local function espCheckWall(character)
+		if not espVisCheck then return true end
+		local part = getAimPart(character)
+		if not part then return false end
+		local origin = camera.CFrame.Position
+		local dir = part.Position - origin
+		local params = RaycastParams.new()
+		local ignore = {character, workspace.CurrentCamera}
+		if plr.Character then table.insert(ignore, plr.Character) end
+		params.FilterDescendantsInstances = ignore
+		params.FilterType = Enum.RaycastFilterType.Blacklist
+		params.IgnoreWater = true
+		params.RespectCanCollide = true
+
+		for _ = 1, 2 do
+			local result = workspace:Raycast(origin, dir, params)
+			if not result then
+				return true
 			end
-			
-			local character = player.Character
-			local humanoidRootPart = character.HumanoidRootPart
-			local screenPos, onScreen = camera:WorldToScreenPoint(humanoidRootPart.Position)
-			
-			if not onScreen or (humanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude > espLockDistance then
-				-- Hide ESP when off screen or too far
-				for _, obj in pairs(esp) do
-					if obj.Visible ~= nil then
-						obj.Visible = false
-					end
-				end
-				continue
-			end
-			
-			-- Update box ESP
-			if esp.box then
-				local size = 1000 / (humanoidRootPart.Position - camera.CFrame.Position).Magnitude
-				esp.box.Size = Vector2.new(size * 30, size * 50)
-				esp.box.Position = Vector2.new(screenPos.X - size * 15, screenPos.Y - size * 25)
-				esp.box.Visible = true
-			end
-			
-			-- Update name ESP
-			if esp.name then
-				esp.name.Text = player.Name
-				esp.name.Position = Vector2.new(screenPos.X, screenPos.Y - 40)
-				esp.name.Visible = true
-			end
-			
-			-- Update health ESP
-			if esp.health and character:FindFirstChild("Humanoid") then
-				local healthPercent = character.Humanoid.Health / character.Humanoid.MaxHealth
-				esp.health.Text = math.floor(healthPercent * 100) .. "%"
-				esp.health.Color = healthPercent > 0.5 and Color3.fromRGB(0, 255, 0) or healthPercent > 0.25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
-				esp.health.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
-				esp.health.Visible = true
-			end
-			
-			-- Update distance ESP
-			if esp.distance then
-				local distance = math.floor((humanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude)
-				esp.distance.Text = distance .. " studs"
-				esp.distance.Position = Vector2.new(screenPos.X, screenPos.Y + 30)
-				esp.distance.Visible = true
-			end
-			
-			-- Update tracer ESP
-			if esp.tracer then
-				esp.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-				esp.tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-				esp.tracer.Visible = true
+			local hit = result.Instance
+			if hit and hit:IsA("BasePart") and (hit.Transparency >= 0.95 or hit.CanCollide == false) then
+				table.insert(ignore, hit)
+				params.FilterDescendantsInstances = ignore
+			else
+				return false
 			end
 		end
+
+		return true
 	end
 	
-	-- ESP management
-	players.PlayerAdded:Connect(function(player)
-		player.CharacterAdded:Connect(function()
-			if espEnabled then
-				createESP(player)
-			end
-		end)
-	end)
+	local function getHealthColor(h, max)
+		local r = math.clamp(h / max, 0, 1)
+		return Color3.fromRGB(math.floor((1 - r) * 255), math.floor(r * 255), 0)
+	end
 	
-	players.PlayerRemoving:Connect(removeESP)
+	local createESP, removeESP
 	
-	-- Update ESP loop
-	RunService.RenderStepped:Connect(function()
-		if espEnabled then
-			-- Create ESP for existing players
-			for _, player in pairs(players:GetPlayers()) do
-				if player ~= plr and not espObjects[player] then
-					createESP(player)
-				end
-			end
-			updateESP()
+	createESP = function(target)
+		if ESPData[target] then
+			removeESP(target)
+		end
+		local obj = {}
+		if QUAD_SUPPORTED then
+			obj.box        = newDrawing("Quad", {Visible=false, Color=espColor, Thickness=1, Filled=false})
+			obj.boxOutline = newDrawing("Quad", {Visible=false, Color=Color3.fromRGB(0,0,0), Thickness=3, Filled=false})
 		else
-			-- Remove all ESP when disabled
-			for player in pairs(espObjects) do
-				removeESP(player)
+			obj.boxT = newDrawing("Line", {Visible=false, Color=espColor, Thickness=1})
+			obj.boxB = newDrawing("Line", {Visible=false, Color=espColor, Thickness=1})
+			obj.boxL = newDrawing("Line", {Visible=false, Color=espColor, Thickness=1})
+			obj.boxR = newDrawing("Line", {Visible=false, Color=espColor, Thickness=1})
+		end
+		obj.name        = newDrawing("Text",   {Visible=false, Text="", Size=13, Color=Color3.fromRGB(255,255,255), Center=true, Outline=true, OutlineColor=Color3.fromRGB(0,0,0)})
+		obj.dist        = newDrawing("Text",   {Visible=false, Text="", Size=12, Color=Color3.fromRGB(200,200,200), Center=true, Outline=true, OutlineColor=Color3.fromRGB(0,0,0)})
+		obj.healthBG    = newDrawing("Line",   {Visible=false, Color=Color3.fromRGB(0,0,0), Thickness=4})
+		obj.health      = newDrawing("Line",   {Visible=false, Color=Color3.fromRGB(0,255,0), Thickness=2})
+		obj.tracerOut   = newDrawing("Line",   {Visible=false, Color=Color3.fromRGB(0,0,0), Thickness=3})
+		obj.tracer      = newDrawing("Line",   {Visible=false, Color=Color3.fromRGB(255,255,0), Thickness=1})
+		obj.headDot     = newDrawing("Circle", {Visible=false, Filled=true, NumSides=20, Radius=4, Color=espColor})
+		ESPData[target] = obj
+	end
+	
+	removeESP = function(target)
+		local obj = ESPData[target]
+		if not obj then return end
+		for _, d in pairs(obj) do
+			pcall(function() d.Visible=false d:Remove() end)
+			ESPDrawings[d] = nil
+		end
+		ESPData[target] = nil
+	end
+	
+	local function hideESPObj(obj)
+		for _, d in pairs(obj) do pcall(function() d.Visible = false end) end
+	end
+	
+	local function setBoxVis(obj, vis, color)
+		if QUAD_SUPPORTED then
+			obj.box.Visible = vis
+			obj.boxOutline.Visible = vis
+			if color and vis then obj.box.Color = color end
+		else
+			for _, k in ipairs({"boxT","boxB","boxL","boxR"}) do
+				obj[k].Visible = vis
+				if color and vis then obj[k].Color = color end
 			end
+		end
+	end
+	
+	local function drawBox(obj, tl, tr, bl, br, color)
+		if QUAD_SUPPORTED then
+			obj.boxOutline.PointA=tl obj.boxOutline.PointB=tr obj.boxOutline.PointC=br obj.boxOutline.PointD=bl obj.boxOutline.Visible=true
+			obj.box.PointA=tl obj.box.PointB=tr obj.box.PointC=br obj.box.PointD=bl obj.box.Color=color obj.box.Visible=true
+		else
+			obj.boxT.From=tl obj.boxT.To=tr obj.boxT.Color=color obj.boxT.Visible=true
+			obj.boxB.From=bl obj.boxB.To=br obj.boxB.Color=color obj.boxB.Visible=true
+			obj.boxL.From=tl obj.boxL.To=bl obj.boxL.Color=color obj.boxL.Visible=true
+			obj.boxR.From=tr obj.boxR.To=br obj.boxR.Color=color obj.boxR.Visible=true
+		end
+	end
+	
+	local function updateESP(player, obj)
+		local character, p = resolveCharacter(player)
+		if not character then hideESPObj(obj) return end
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local hrp = getRootPart(character)
+		local head = character:FindFirstChild("Head")
+		local aimPart = getAimPart(character)
+		if not humanoid or not hrp or not aimPart or humanoid.Health <= 0 then hideESPObj(obj) return end
+		local dist = (hrp.Position - camera.CFrame.Position).Magnitude
+		
+		-- Apply ESP distance lock
+		if dist > espLockDistance then 
+			hideESPObj(obj) 
+			return 
+		end
+		
+		-- Apply max distance check
+		if dist > espLockDistance then hideESPObj(obj) return end
+		
+		-- Apply visibility check if enabled
+		if espVisCheck and not espCheckWall(character) then hideESPObj(obj) return end
+		
+		-- Hide teammates when team check is enabled
+		local isTeammate = espIsTeammate(player)
+		if isTeammate then 
+			hideESPObj(obj) 
+			return 
+		end
+		
+		local headScreen = camera:WorldToViewportPoint(aimPart.Position)
+		if headScreen.Z < 0 then hideESPObj(obj) return end
+
+		local color = espColor
+		local scale = (head and head.Size.Y or 2) / 2
+		local hrpCF = hrp.CFrame
+		pcall(function() hrpCF = hrp:GetRenderCFrame() end)
+		local headSizeY = head and head.Size.Y or 2
+		local topPos = camera:WorldToViewportPoint((hrpCF * CFrame.new(0, headSizeY + hrp.Size.Y + 0.1, 0)).Position)
+		local botPos = camera:WorldToViewportPoint((hrpCF * CFrame.new(0, -hrp.Size.Y, 0)).Position)
+		if topPos.Z <= 0 or botPos.Z <= 0 then hideESPObj(obj) return end
+		local height = math.abs(topPos.Y - botPos.Y)
+		if height ~= height or height <= 1 or height > (camera.ViewportSize.Y * 5) then hideESPObj(obj) return end
+		local width  = height * 0.55
+		local cx     = headScreen.X
+		local top    = topPos.Y
+		local bot    = botPos.Y
+		local left   = cx - width / 2
+		local right  = cx + width / 2
+
+		-- Box
+		if boxEsp then
+			drawBox(obj, Vector2.new(left,top), Vector2.new(right,top), Vector2.new(left,bot), Vector2.new(right,bot), color)
+		else
+			setBoxVis(obj, false)
+		end
+
+		-- Name
+		if nameEsp then
+			local name = character.Name
+			if p then
+				name = p.DisplayName
+			end
+			obj.name.Text = name
+			obj.name.Position = Vector2.new(cx, top - 16)
+			obj.name.Color = Color3.fromRGB(255,255,255)
+			obj.name.Size = 13
+			obj.name.Visible = true
+		else
+			obj.name.Visible = false
+		end
+
+		-- Distance
+		if distanceEsp then
+			obj.dist.Text = string.format("[%dm]", math.floor(dist))
+			obj.dist.Position = Vector2.new(cx, top - (nameEsp and 28 or 16))
+			obj.dist.Size = 12
+			obj.dist.Visible = true
+		else
+			obj.dist.Visible = false
+		end
+
+		-- Health bar
+		if healthEsp then
+			local ratio = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+			local barX = left - 5
+			obj.healthBG.From = Vector2.new(barX, top) obj.healthBG.To = Vector2.new(barX, bot) obj.healthBG.Visible = true
+			obj.health.From = Vector2.new(barX, bot) obj.health.To = Vector2.new(barX, bot - (bot - top) * ratio)
+			obj.health.Color = getHealthColor(humanoid.Health, humanoid.MaxHealth) obj.health.Visible = true
+		else
+			obj.healthBG.Visible = false obj.health.Visible = false
+		end
+
+		-- Tracers
+		if tracerEsp then
+			local origin = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+			local target = Vector2.new(cx, bot)
+			obj.tracerOut.From=origin obj.tracerOut.To=target obj.tracerOut.Visible=true
+			obj.tracer.From=origin obj.tracer.To=target obj.tracer.Color=Color3.fromRGB(255,255,0) obj.tracer.Visible=true
+		else
+			obj.tracerOut.Visible=false obj.tracer.Visible=false
+		end
+
+		-- Head dot (not in current UI but keeping for compatibility)
+		obj.headDot.Visible = false
+	end
+	
+	-- Player management
+	local function onPlayerAdded(player)
+		if player == plr then return end
+		createESP(player)
+	end
+
+	local function onPlayerRemoving(player)
+		removeESP(player)
+	end
+
+	for _, player in ipairs(players:GetPlayers()) do onPlayerAdded(player) end
+	players.PlayerAdded:Connect(onPlayerAdded)
+	players.PlayerRemoving:Connect(onPlayerRemoving)
+	
+	-- Main game loop from working version
+	local currentTarget = nil
+	local aiming = false
+	
+	-- Mouse aiming detection
+	UserInputService.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 and aimbotEnabled then
+			aiming = true
 		end
 	end)
 	
-	-- Rainbow FOV functionality
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			aiming = false
+			currentTarget = nil
+		end
+	end)
+	
+	-- FOV Circle
 	local fovCircle = Drawing.new("Circle")
 	fovCircle.Color = fovColor
 	fovCircle.Thickness = 2
 	fovCircle.Transparency = 0.5
 	fovCircle.Visible = false
 	
+	-- Main render loop
 	RunService.RenderStepped:Connect(function()
-		if rainbowFov then
-			hue = hue + rainbowSpeed
-			if hue > 1 then hue = 0 end
-			fovCircle.Color = Color3.fromHSV(hue, 1, 1)
-		else
-			fovCircle.Color = fovColor
-		end
-		
-		fovCircle.Radius = aimFov * (camera.ViewportSize.Y / 1080)
-		fovCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-		fovCircle.Visible = aimbotEnabled or rainbowFov
-	end)
-	
-	-- Cleanup on script end
-	game:GetService("CoreGui").ChildRemoved:Connect(function(child)
-		if child.Name == "PhantomSuiteUI" or child.Name == "Orion" then
-			-- Clean up ESP objects
-			for player in pairs(espObjects) do
-				removeESP(player)
+		local ok = pcall(function()
+			-- FOV circle
+			fovCircle.Position = Vector2.new(mouse.X, mouse.Y + 50)
+			if rainbowFov then
+				hue = hue + rainbowSpeed
+				if hue > 1 then hue = 0 end
+				fovCircle.Color = Color3.fromHSV(hue, 1, 1)
+			else
+				fovCircle.Color = fovColor
 			end
-			
-			-- Clean up FOV circle
-			if fovCircle and fovCircle.Remove then
-				fovCircle:Remove()
+			fovCircle.Radius = aimFov * (camera.ViewportSize.Y / 1080)
+			fovCircle.Visible = aimbotEnabled or rainbowFov
+
+			-- Aimbot System
+			if aimbotEnabled or blatantEnabled then
+				if blatantEnabled then
+					-- Blatant: always active, snap to closest visible enemy
+					currentTarget = getBlatantTarget()
+					if currentTarget then
+						aimAt(currentTarget)
+					end
+				elseif aiming then
+					-- Normal aimbot requires aiming key
+					if stickyAimEnabled and currentTarget then
+						local character = currentTarget.Character
+						if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
+							if not isOnSameTeam(currentTarget) then
+								if character.Humanoid.Health >= minHealth or not healthCheck then
+									if not wallCheck or not checkWall(character) then
+										aimAt(currentTarget)
+									end
+								end
+							end
+						else
+							currentTarget = nil
+						end
+					end
+					if not stickyAimEnabled or not currentTarget then
+						currentTarget = getTarget()
+					end
+					if currentTarget then 
+						aimAt(currentTarget)
+					end
+				else
+					currentTarget = nil
+				end
+			else
+				currentTarget = nil
 			end
+
+			-- ESP
+			if not espEnabled then
+				if espWasEnabled then
+					for _, obj in pairs(ESPData) do hideESPObj(obj) end
+				end
+			else
+				for target, obj in pairs(ESPData) do
+					updateESP(target, obj)
+				end
+			end
+			espWasEnabled = espEnabled
+		end)
+		if not ok then
+			for _, obj in pairs(ESPData) do hideESPObj(obj) end
+			fovCircle.Visible = false
 		end
 	end)
 end)
