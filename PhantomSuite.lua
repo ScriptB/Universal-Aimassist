@@ -73,6 +73,12 @@ local function mkCorner(parent, r)
 	local c = Instance.new("UICorner")
 	c.CornerRadius = UDim.new(0, r)
 	c.Parent = parent
+	
+	-- Add clipping to prevent content spill over rounded corners
+	if parent:IsA("GuiObject") and not parent.ClipsDescendants then
+		parent.ClipsDescendants = true
+	end
+	
 	return c
 end
 
@@ -188,6 +194,7 @@ Dock.Position = UDim2.new(0.5, 0, 1, -22)
 Dock.BackgroundColor3 = Theme.Glass
 Dock.BackgroundTransparency = 0.82
 Dock.BorderSizePixel = 0
+Dock.ClipsDescendants = true -- Prevent content spill over rounded corners
 Dock.ZIndex = 10
 Dock.Parent = Root
 mkCorner(Dock, 32) -- Increased for smoother edges
@@ -202,6 +209,7 @@ DockInner.BackgroundTransparency = 0.90
 DockInner.BorderSizePixel = 0
 DockInner.Size = UDim2.new(1, -20, 1, -20)
 DockInner.Position = UDim2.new(0, 10, 0, 10)
+DockInner.ClipsDescendants = true -- Prevent content spill over rounded corners
 DockInner.ZIndex = 11
 DockInner.Parent = Dock
 mkCorner(DockInner, 24) -- Increased for smoother edges
@@ -343,6 +351,7 @@ local function mkDockBubbleButton(cfg)
 	btn.BackgroundTransparency = 0.86
 	btn.BorderSizePixel = 0
 	btn.Size = UDim2.new(0, 50, 0, 50)
+	btn.ClipsDescendants = true -- Prevent icon spill over rounded corners
 	btn.Text = ""
 	btn.ZIndex = 12
 	btn.Parent = DockTabs
@@ -385,6 +394,7 @@ local function mkBubbleCard(key, titleText)
 	card.BackgroundColor3 = Theme.Glass
 	card.BackgroundTransparency = 0.84
 	card.BorderSizePixel = 0
+	card.ClipsDescendants = true -- Prevent content spill over rounded corners
 	card.ZIndex = 30
 	card.Visible = false
 	card.Parent = Root
@@ -438,6 +448,7 @@ local function mkBubbleCard(key, titleText)
 	close.BackgroundTransparency = 0.88
 	close.BorderSizePixel = 0
 	close.Size = UDim2.new(0, 38, 0, 38)
+	close.ClipsDescendants = true -- Prevent text spill over rounded corners
 	close.Position = UDim2.new(1, -52, 0, 7)
 	close.Text = "↩"
 	close.Font = Enum.Font.GothamBold
@@ -470,6 +481,7 @@ local function mkPill(parent, text, color)
 	pill.BackgroundTransparency = 0.82
 	pill.BorderSizePixel = 0
 	pill.Size = UDim2.new(1, 0, 0, 40)
+	pill.ClipsDescendants = true -- Prevent text spill over rounded corners
 	pill.ZIndex = 33
 	pill.Parent = parent
 	mkCorner(pill, 22) -- Increased for smoother edges
@@ -496,6 +508,7 @@ local function mkToggleRow(parent, name, get, set)
 	row.BackgroundTransparency = 0.84
 	row.BorderSizePixel = 0
 	row.Size = UDim2.new(1, 0, 0, 44)
+	row.ClipsDescendants = true -- Prevent content spill over rounded corners
 	row.Text = ""
 	row.ZIndex = 33
 	row.Parent = parent
@@ -516,6 +529,7 @@ local function mkToggleRow(parent, name, get, set)
 
 	local chip = Instance.new("Frame")
 	chip.Size = UDim2.new(0, 66, 0, 28)
+	chip.ClipsDescendants = true -- Prevent text spill over rounded corners
 	chip.Position = UDim2.new(1, -86, 0.5, 0)
 	chip.AnchorPoint = Vector2.new(0, 0.5)
 	chip.BackgroundColor3 = Theme.Accent
