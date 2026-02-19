@@ -28,7 +28,7 @@ local rainbowSpeed = 0.005
 local aimFov = 100
 local aiming = false
 local predictionStrength = 0.065
-local smoothing = 0.05
+local smoothing = 5 -- 1-10 scale (1=very strong, 10=barely assisted)
 
 -- ESP/Aimbot distance lock variables
 local espLockDistance = 500
@@ -1295,14 +1295,16 @@ task.spawn(function()
 				end
 			})
 			
-			Aimbot:AddSlider({
-				Name = "Smoothing",
-				Min = 0,
-				Max = 1,
-				Default = smoothing,
-				ValueName = "smoothness",
-				Callback = function(value)
-					smoothing = value
+			Aimbot:Slider({
+				Name = "Smoothness (1=Strong, 10=Subtle)", 
+				Side = "Left", 
+				Min = 1, 
+				Max = 10, 
+				Value = smoothing, 
+				Precise = 0, 
+				Unit = "",
+				Callback = function(Value) 
+					smoothing = Value 
 				end
 			})
 			
@@ -1810,7 +1812,11 @@ task.spawn(function()
 	end
 	
 	local function smooth(from, to)
-		return from:Lerp(to, smoothing)
+		-- Convert 1-10 scale to 0.1-0.9 smoothing factor
+		-- 1 = very strong (0.1 smoothing, 90% movement)
+		-- 10 = barely assisted (0.9 smoothing, 10% movement)
+		local smoothingFactor = (smoothing - 1) * 0.0889 + 0.1
+		return from:Lerp(to, smoothingFactor)
 	end
 	
 	local function aimAt(target)
