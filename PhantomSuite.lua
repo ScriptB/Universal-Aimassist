@@ -190,7 +190,7 @@ Dock.BackgroundTransparency = 0.82
 Dock.BorderSizePixel = 0
 Dock.ZIndex = 10
 Dock.Parent = Root
-mkCorner(Dock, 26)
+mkCorner(Dock, 32) -- Increased for smoother edges
 mkStroke(Dock, 2, 0.35, Theme.Stroke)
 mkGradient(Dock, 90, Theme.Glass, Theme.Glass2, Theme.Glass)
 mkShadow(Dock, 0.62)
@@ -204,7 +204,7 @@ DockInner.Size = UDim2.new(1, -20, 1, -20)
 DockInner.Position = UDim2.new(0, 10, 0, 10)
 DockInner.ZIndex = 11
 DockInner.Parent = Dock
-mkCorner(DockInner, 20)
+mkCorner(DockInner, 24) -- Increased for smoother edges
 mkStroke(DockInner, 1, 0.55, Theme.Stroke)
 
 -- Left title (fixed width)
@@ -346,7 +346,7 @@ local function mkDockBubbleButton(cfg)
 	btn.Text = ""
 	btn.ZIndex = 12
 	btn.Parent = DockTabs
-	mkCorner(btn, 20)
+	mkCorner(btn, 24) -- Increased for smoother edges
 	mkStroke(btn, 1, 0.55, Theme.Stroke)
 	mkGradient(btn, 55, Theme.Glass, Theme.Glass2, Theme.Glass)
 
@@ -388,7 +388,7 @@ local function mkBubbleCard(key, titleText)
 	card.ZIndex = 30
 	card.Visible = false
 	card.Parent = Root
-	mkCorner(card, 46) -- rounder
+	mkCorner(card, 52) -- Increased for much rounder bubbles
 	mkStroke(card, 2, 0.30, Theme.Stroke)
 	mkGradient(card, 110, Theme.Glass, Theme.Glass2, Theme.Glass)
 	mkShadow(card, 0.58)
@@ -401,14 +401,14 @@ local function mkBubbleCard(key, titleText)
 	sheen.Position = UDim2.new(0, 14, 0, 10)
 	sheen.ZIndex = 31
 	sheen.Parent = card
-	mkCorner(sheen, 40)
+	mkCorner(sheen, 46) -- Increased for smoother edges
 	local sheenFill = Instance.new("Frame")
 	sheenFill.BackgroundColor3 = Color3.fromRGB(255,255,255)
 	sheenFill.BackgroundTransparency = 0.92
 	sheenFill.BorderSizePixel = 0
 	sheenFill.Size = UDim2.new(1,0,1,0)
 	sheenFill.Parent = sheen
-	mkCorner(sheenFill, 40)
+	mkCorner(sheenFill, 46) -- Increased for smoother edges
 	mkGradient(sheenFill, 35, Color3.fromRGB(255,255,255), Color3.fromRGB(240,248,255))
 
 	local top = Instance.new("Frame")
@@ -445,7 +445,7 @@ local function mkBubbleCard(key, titleText)
 	close.TextColor3 = Theme.Text
 	close.ZIndex = 33
 	close.Parent = top
-	mkCorner(close, 18)
+	mkCorner(close, 22) -- Increased for smoother edges
 	mkStroke(close, 1, 0.55, Theme.Stroke)
 
 	local content = Instance.new("Frame")
@@ -472,7 +472,7 @@ local function mkPill(parent, text, color)
 	pill.Size = UDim2.new(1, 0, 0, 40)
 	pill.ZIndex = 33
 	pill.Parent = parent
-	mkCorner(pill, 18)
+	mkCorner(pill, 22) -- Increased for smoother edges
 	mkStroke(pill, 1, 0.60, Theme.Stroke)
 
 	local lbl = Instance.new("TextLabel")
@@ -499,7 +499,7 @@ local function mkToggleRow(parent, name, get, set)
 	row.Text = ""
 	row.ZIndex = 33
 	row.Parent = parent
-	mkCorner(row, 18)
+	mkCorner(row, 22) -- Increased for smoother edges
 	mkStroke(row, 1, 0.60, Theme.Stroke)
 
 	local txt = Instance.new("TextLabel")
@@ -523,7 +523,7 @@ local function mkToggleRow(parent, name, get, set)
 	chip.BorderSizePixel = 0
 	chip.ZIndex = 34
 	chip.Parent = row
-	mkCorner(chip, 14)
+	mkCorner(chip, 18) -- Increased for smoother edges
 	mkStroke(chip, 1, 0.55, Theme.Stroke)
 
 	local chipText = Instance.new("TextLabel")
