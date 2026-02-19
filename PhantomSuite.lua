@@ -258,9 +258,9 @@ tabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabsLayout.Padding = UDim.new(0, 8)
 tabsLayout.Parent = DockTabs
 
--- Dock snap
+-- Dock snap logic (left/center/right) - SMOOTH SLIDING
 local DockSnap = "Center"
-local function snapDock(mode)
+local function snapDock(mode, smooth)
 	DockSnap = mode
 	local vp = workspace.CurrentCamera.ViewportSize
 	local yOff = -22
@@ -272,7 +272,10 @@ local function snapDock(mode)
 	else
 		targetX = UDim2.new(0.5, 0, 1, yOff)
 	end
-	tween(Dock, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = targetX})
+	
+	-- Always use smooth tweening
+	local duration = smooth and 0.6 or 0.28
+	tween(Dock, TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = targetX})
 end
 
 -- Drag along bottom (snap on release)
@@ -294,9 +297,15 @@ do
 			local rightX = vp.X - 20 - Dock.AbsoluteSize.X/2
 			local centerX = vp.X/2
 			local dl, dc, dr = math.abs(x-leftX), math.abs(x-centerX), math.abs(x-rightX)
-			if dl < dc and dl < dr then snapDock("Left")
-			elseif dr < dc and dr < dl then snapDock("Right")
-			else snapDock("Center") end
+			
+			-- SMOOTH sliding to nearest position
+			if dl < dc and dl < dr then 
+				snapDock("Left", true) -- true for smooth sliding
+			elseif dr < dc and dr < dl then 
+				snapDock("Right", true) -- true for smooth sliding
+			else 
+				snapDock("Center", true) -- true for smooth sliding
+			end
 		end)
 	end)
 
@@ -312,7 +321,7 @@ do
 	end)
 
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-		task.defer(function() snapDock(DockSnap) end)
+		task.defer(function() snapDock(DockSnap, false) end) -- false for normal speed on resize
 	end)
 end
 
@@ -800,7 +809,7 @@ end)
 
 -- Start hidden + initial snap
 Root.Enabled = false
-task.defer(function() snapDock("Center") end)
+task.defer(function() snapDock("Center", false) end) -- false for normal initial speed
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
