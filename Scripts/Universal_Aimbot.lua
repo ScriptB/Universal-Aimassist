@@ -46,6 +46,9 @@ local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
+local Drawing = nil -- Will be set if available
+local success, DrawingService = pcall(function() return game:GetService("Drawing") end)
+if success then Drawing = DrawingService end
 local plr = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 local mouse = plr:GetMouse()
@@ -213,6 +216,57 @@ end
 loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/main/Useful/DevCopy"))()
 
 -- ===================================
+-- EXTRAS FUNCTIONS (Defined before use)
+-- ===================================
+
+local function startFly()
+    if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+        plr.Character.Humanoid:ChangeState("Physics")
+        plr.Character.Humanoid.PlatformStand = true
+    end
+end
+
+local function stopFly()
+    if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+        plr.Character.Humanoid:ChangeState("Physics")
+        plr.Character.Humanoid.PlatformStand = false
+    end
+end
+
+local function startNoclip()
+    if plr.Character then
+        for _, part in ipairs(plr.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end
+
+local function stopNoclip()
+    if plr.Character then
+        for _, part in ipairs(plr.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+local function startInfJump()
+    if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+        plr.Character.Humanoid.JumpPower = 50
+        plr.Character.Humanoid:ChangeState("Physics")
+    end
+end
+
+local function stopInfJump()
+    if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+        plr.Character.Humanoid.JumpPower = 50
+    end
+end
+
+-- ===================================
 -- MAIN INITIALIZATION
 -- ===================================
 
@@ -369,10 +423,10 @@ local function main()
             local fovColorPicker = AimbotTab:Colorpicker({
                 Name = "🎨 FOV Color",
                 Side = "Left",
-                Color = circleColor,
+                Color = {circleColor.R, circleColor.G, circleColor.B},
                 Callback = function(Color, Table)
-                    circleColor = Color
-                    if fovCircle then fovCircle.Color = Color end
+                    circleColor = Color3.fromRGB(Color[1], Color[2], Color[3])
+                    if fovCircle then fovCircle.Color = circleColor end
                 end
             })
             
@@ -453,9 +507,9 @@ local function main()
             local espColorPicker = ESPTab:Colorpicker({
                 Name = "🎨 ESP Color",
                 Side = "Left",
-                Color = espColor,
+                Color = {espColor.R, espColor.G, espColor.B},
                 Callback = function(Color, Table)
-                    espColor = Color
+                    espColor = Color3.fromRGB(Color[1], Color[2], Color[3])
                 end
             })
         end
@@ -661,15 +715,18 @@ local function main()
     end
     
     -- ===================================
-    -- FOV CIRCLE
+    -- FOV CIRCLE (if Drawing is available)
     -- ===================================
     
-    local fovCircle = Drawing.new("Circle")
-    fovCircle.Thickness = 2
-    fovCircle.Radius = aimFov
-    fovCircle.Filled = false
-    fovCircle.Color = circleColor
-    fovCircle.Visible = false
+    local fovCircle = nil
+    if Drawing then
+        fovCircle = Drawing.new("Circle")
+        fovCircle.Thickness = 2
+        fovCircle.Radius = aimFov
+        fovCircle.Filled = false
+        fovCircle.Color = circleColor
+        fovCircle.Visible = false
+    end
     
     local currentTarget = nil
     
@@ -752,57 +809,6 @@ local function main()
                 local targetCFrame = CFrame.new(camera.CFrame.Position, predictedPosition)
                 camera.CFrame = smooth(camera.CFrame, targetCFrame)
             end
-        end
-    end
-    
-    -- ===================================
-    -- EXTRAS FUNCTIONS
-    -- ===================================
-    
-    local function startFly()
-        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
-            plr.Character.Humanoid:ChangeState("Physics")
-            plr.Character.Humanoid.PlatformStand = true
-        end
-    end
-    
-    local function stopFly()
-        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
-            plr.Character.Humanoid:ChangeState("Physics")
-            plr.Character.Humanoid.PlatformStand = false
-        end
-    end
-    
-    local function startNoclip()
-        if plr.Character then
-            for _, part in ipairs(plr.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end
-    end
-    
-    local function stopNoclip()
-        if plr.Character then
-            for _, part in ipairs(plr.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-    
-    local function startInfJump()
-        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
-            plr.Character.Humanoid.JumpPower = 50
-            plr.Character.Humanoid:ChangeState("Physics")
-        end
-    end
-    
-    local function stopInfJump()
-        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
-            plr.Character.Humanoid.JumpPower = 50
         end
     end
     
