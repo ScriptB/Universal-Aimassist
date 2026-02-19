@@ -37,7 +37,7 @@ local aimbotLockDistance = 500
 local aimbotEnabled = false
 local blatantEnabled = false
 
--- ESP variables
+-- ESP variables (unified)
 local espEnabled = false
 local boxEsp = true
 local nameEsp = true
@@ -74,24 +74,6 @@ local npcTargets = {}
 
 local circleColor = Color3.fromRGB(255, 0, 0)
 local targetedCircleColor = Color3.fromRGB(0, 255, 0)
-
---> [< ESP Variables >] <--
-
-local espEnabled   = false
-local espBox       = true
-local espNames     = true
-local espHealth    = true
-local espDistance  = true
-local espTracers   = false
-local espHeadDot   = false
-local espTeamCheck = false
-local espVisCheck  = false
-local espMaxDist   = 1000
-local espTextSize  = 13
-local espBoxColor    = Color3.fromRGB(255, 0, 0)
-local espNameColor   = Color3.fromRGB(255, 255, 255)
-local espTracerColor = Color3.fromRGB(255, 255, 0)
-local espTeamColor   = Color3.fromRGB(0, 162, 255)
 
 --> [< Extras / Commands Variables >] <--
 
@@ -508,17 +490,11 @@ local function configToTable()
 		rainbowSpeed      = rainbowSpeed,
 		aimbotIncludeNPCs = aimbotIncludeNPCs,
 		espEnabled        = espEnabled,
-		espBox            = espBox,
-		espNames          = espNames,
-		espHealth         = espHealth,
-		espDistance       = espDistance,
-		espTracers        = espTracers,
-		espHeadDot        = espHeadDot,
-		espTeamCheck      = espTeamCheck,
-		espVisCheck       = espVisCheck,
-		espMaxDist        = espMaxDist,
-		espLockDistance   = espLockDistance,
-		espTextSize       = espTextSize,
+		espBox            = boxEsp,
+		espNames          = nameEsp,
+		espHealth         = healthEsp,
+		espDistance       = distanceEsp,
+		espTracers        = tracerEsp,
 		espIncludeNPCs    = espIncludeNPCs,
 		npcScanInterval   = npcScanInterval,
 		npcMaxTargets     = npcMaxTargets,
@@ -592,17 +568,11 @@ local function applyConfig(cfg)
 	if type(cfg.rainbowSpeed)       == "number"  then rainbowSpeed      = cfg.rainbowSpeed      end
 	if type(cfg.aimbotIncludeNPCs)  == "boolean" then aimbotIncludeNPCs = cfg.aimbotIncludeNPCs end
 	if type(cfg.espEnabled)         == "boolean" then espEnabled        = cfg.espEnabled        end
-	if type(cfg.espBox)             == "boolean" then espBox            = cfg.espBox            end
-	if type(cfg.espNames)           == "boolean" then espNames          = cfg.espNames          end
-	if type(cfg.espHealth)          == "boolean" then espHealth         = cfg.espHealth         end
-	if type(cfg.espDistance)        == "boolean" then espDistance       = cfg.espDistance       end
-	if type(cfg.espTracers)         == "boolean" then espTracers        = cfg.espTracers        end
-	if type(cfg.espHeadDot)         == "boolean" then espHeadDot        = cfg.espHeadDot        end
-	if type(cfg.espTeamCheck)       == "boolean" then espTeamCheck      = cfg.espTeamCheck      end
-	if type(cfg.espVisCheck)        == "boolean" then espVisCheck       = cfg.espVisCheck       end
-	if type(cfg.espMaxDist)         == "number"  then espMaxDist        = cfg.espMaxDist        end
-	if type(cfg.espLockDistance)    == "number"  then espLockDistance   = cfg.espLockDistance   end
-	if type(cfg.espTextSize)        == "number"  then espTextSize       = cfg.espTextSize       end
+	if type(cfg.espBox)             == "boolean" then boxEsp            = cfg.espBox            end
+	if type(cfg.espNames)           == "boolean" then nameEsp          = cfg.espNames          end
+	if type(cfg.espHealth)          == "boolean" then healthEsp         = cfg.espHealth         end
+	if type(cfg.espDistance)       == "boolean" then distanceEsp       = cfg.espDistance       end
+	if type(cfg.espTracers)        == "boolean" then tracerEsp        = cfg.espTracers        end
 	if type(cfg.espIncludeNPCs)     == "boolean" then espIncludeNPCs    = cfg.espIncludeNPCs    end
 	if type(cfg.npcScanInterval)    == "number"  then npcScanInterval   = cfg.npcScanInterval   end
 	if type(cfg.npcMaxTargets)      == "number"  then npcMaxTargets     = cfg.npcMaxTargets     end
@@ -1968,27 +1938,6 @@ task.spawn(function()
 			end
 		end
 	end
-	
-	-- Main aimbot loop from working version
-	RunService.Heartbeat:Connect(function()
-		if not aimbotEnabled then 
-			currentTarget = nil
-			return 
-		end
-		
-		if not aiming then
-			currentTarget = nil
-			return
-		end
-		
-		local target = getTarget()
-		if target then
-			currentTarget = target
-			aimAt(target)
-		else
-			currentTarget = nil
-		end
-	end)
 	
 	-- Mouse aiming detection
 	UserInputService.InputBegan:Connect(function(input)
