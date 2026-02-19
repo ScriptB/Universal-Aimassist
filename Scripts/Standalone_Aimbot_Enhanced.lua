@@ -18,9 +18,32 @@
 -- LOAD BRACKET LIBRARY FIRST
 -- ===================================
 
-local success, Bracket = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/AlexR32/Roblox/main/BracketV3.lua"))()
-end)
+local function LoadBracketLibrary()
+    -- Multiple fallback URLs for reliability
+    local urls = {
+        "https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/main/Scripts/Libraries/BracketV3.lua",
+        "https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/refs/heads/main/Scripts/Libraries/BracketV3.lua",
+        "https://cdn.jsdelivr.net/gh/ScriptB/Universal-Aimassist@main/Scripts/Libraries/BracketV3.lua",
+        "https://raw.githubusercontent.com/AlexR32/Roblox/main/BracketV3.lua" -- Original fallback
+    }
+    
+    for i, url in ipairs(urls) do
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet(url))()
+        end)
+        
+        if success and result then
+            print("✅ Bracket V3 loaded successfully from: " .. url)
+            return result
+        else
+            warn("❌ Failed to load from URL " .. i .. ": " .. url)
+        end
+    end
+    
+    error("❌ All Bracket V3 loading attempts failed!")
+end
+
+local success, Bracket = pcall(LoadBracketLibrary)
 
 if not success or not Bracket then
     warn("❌ Failed to load Bracket Library!")
