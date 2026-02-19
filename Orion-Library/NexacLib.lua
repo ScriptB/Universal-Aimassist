@@ -572,20 +572,8 @@ CreateElement("Label", function(text, textSize, transparency)
 	})
 end)
 
--- Notifications
-local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
-	SetProps(MakeElement("List"), {
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		VerticalAlignment = Enum.VerticalAlignment.Bottom,
-		Padding = UDim.new(0, 8)
-	})
-}), {
-	Position = UDim2.new(1, -24, 1, -24),
-	Size = UDim2.new(0, 320, 1, -24),
-	AnchorPoint = Vector2.new(1, 1),
-	Parent = Nexac
-})
+-- Notifications (will be created after ScreenGui setup)
+local NotificationHolder
 
 function NexacLib:MakeNotification(cfg)
 	task.spawn(function()
@@ -594,6 +582,23 @@ function NexacLib:MakeNotification(cfg)
 		cfg.Content = cfg.Content or "Test"
 		cfg.Image = cfg.Image or "rbxassetid://4384403532"
 		cfg.Time = cfg.Time or 6
+
+		-- Create notification holder if it doesn't exist
+		if not NotificationHolder then
+			NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
+				SetProps(MakeElement("List"), {
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					VerticalAlignment = Enum.VerticalAlignment.Bottom,
+					Padding = UDim.new(0, 8)
+				})
+			}), {
+				Position = UDim2.new(1, -24, 1, -24),
+				Size = UDim2.new(0, 320, 1, -24),
+				AnchorPoint = Vector2.new(1, 1),
+				Parent = Nexac
+			})
+		end
 
 		local t = NexacLib.Themes[NexacLib.SelectedTheme]
 

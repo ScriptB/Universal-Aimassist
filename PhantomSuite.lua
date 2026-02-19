@@ -1115,13 +1115,14 @@ local function createMainUI(lockedFeatures, safetyIssues)
 	-- Create NexacLib window with custom theme
 	local Window = NexacLib:MakeWindow({
 		Name = "⚡ Phantom Suite",
-		SubTitle = "Advanced Gaming Tools",
 		HidePremium = false,
 		SaveConfig = true,
 		ConfigFolder = "PhantomSuite",
 		IntroEnabled = true,
+		IntroText = "⚡ Phantom Suite - Advanced Gaming Tools",
 		IntroIcon = "rbxassetid://7733658168",
-		Size = UDim2.new(0, 600, 0, 700)
+		ShowIcon = true,
+		Icon = "rbxassetid://7733658168"
 	})
 	
 	-- Apply custom theme through Nexac's built-in methods
