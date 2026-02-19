@@ -1,6 +1,5 @@
 --// NexacLib Modern (single-file) - Rebrand of Orion -> Nexac (same API / behavior)
 --// Fully functional build (elements implemented)
---// Enhanced for 100% OrionLib compatibility
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -44,91 +43,12 @@ local NexacLib = {
 }
 
 -- Placeholder icon mapping
-local Icons = {
-	["home"] = "",
-	["settings"] = "",
-	["user"] = "",
-	["info"] = "",
-	["warning"] = "",
-	["check"] = "",
-	["x"] = "",
-	["chevron-down"] = "",
-	["chevron-up"] = "",
-	["chevron-left"] = "",
-	["chevron-right"] = "",
-	["plus"] = "",
-	["minus"] = "",
-	["search"] = "",
-	["download"] = "",
-	["upload"] = "",
-	["trash"] = "",
-	["edit"] = "",
-	["copy"] = "",
-	["save"] = "",
-	["folder"] = "",
-	["file"] = "",
-	["lock"] = "",
-	["unlock"] = "",
-	["eye"] = "",
-	["eye-off"] = "",
-	["play"] = "",
-	["pause"] = "",
-	["stop"] = "",
-	["skip-back"] = "",
-	["skip-forward"] = "",
-	["volume"] = "",
-	["volume-x"] = "",
-	["wifi"] = "",
-	["wifi-off"] = "",
-	["battery"] = "",
-	["battery-charging"] = "",
-	["moon"] = "",
-	["sun"] = "",
-	["cloud"] = "",
-	["cloud-rain"] = "",
-	["umbrella"] = "",
-	["star"] = "",
-	["heart"] = "",
-	["bookmark"] = "",
-	["flag"] = "",
-	["bell"] = "",
-	["mail"] = "",
-	["calendar"] = "",
-	["clock"] = "",
-	["camera"] = "",
-	["video"] = "",
-	["image"] = "",
-	["music"] = "",
-	["headphones"] = "",
-	["mic"] = "",
-	["phone"] = "",
-	["monitor"] = "",
-	["tablet"] = "",
-	["smartphone"] = "",
-	["globe"] = "",
-	["map"] = "",
-	["compass"] = "",
-	["zap"] = "",
-	["cpu"] = "",
-	["hard-drive"] = "",
-	["database"] = "",
-	["server"] = "",
-	["cloud-snow"] = "",
-	["thermometer"] = "",
-	["wind"] = "",
-	["droplet"] = "",
-	["flame"] = ""
-}
-
+local Icons = {}
 local function GetIcon(IconName)
-	if Icons[IconName] ~= nil then
-		return Icons[IconName]
-	else
-		return nil
-	end
+	return Icons[IconName]
 end
 
-warn("Nexac Library (Modern) - Using placeholder icons. Upload custom icons.json for better icons.")
+warn("Nexac Library (Modern) - Icons are placeholders. Provide your own icon mapping if needed.")
 
 -- ScreenGui mount (same behavior, rebranded name)
 local Nexac = Instance.new("ScreenGui")
@@ -143,20 +63,16 @@ else
 	Nexac.Parent = (gethui and gethui()) or game:GetService("CoreGui")
 end
 
--- remove duplicates (OrionLib compatibility)
-if gethui then
-	for _, Interface in ipairs(gethui():GetChildren()) do
-		if Interface.Name == Nexac.Name and Interface ~= Nexac then
-			Interface:Destroy()
-		end
-	end
-else
-	for _, Interface in ipairs(game:GetService("CoreGui"):GetChildren()) do
-		if Interface.Name == Nexac.Name and Interface ~= Nexac then
-			Interface:Destroy()
+-- remove duplicates
+local function cleanupDuplicates()
+	local parent = Nexac.Parent
+	for _, g in ipairs(parent:GetChildren()) do
+		if g:IsA("ScreenGui") and g.Name == Nexac.Name and g ~= Nexac then
+			g:Destroy()
 		end
 	end
 end
+cleanupDuplicates()
 
 function NexacLib:IsRunning()
 	local parent = Nexac.Parent
@@ -481,7 +397,7 @@ end
 
 -- Elements
 CreateElement("Corner", function(scale, offset)
-	return Create("UICorner", {CornerRadius = UDim.new(scale or 0, offset or 10)})
+	return Create("UICorner", {CornerRadius = UDim.new(scale or 0, offset or UI.Corner)})
 end)
 
 CreateElement("Stroke", function(color, thickness, transparency)
@@ -503,10 +419,10 @@ end)
 
 CreateElement("Padding", function(bottom, left, right, top)
 	return Create("UIPadding", {
-		PaddingBottom = UDim.new(0, bottom or 4),
-		PaddingLeft = UDim.new(0, left or 4),
-		PaddingRight = UDim.new(0, right or 4),
-		PaddingTop = UDim.new(0, top or 4)
+		PaddingBottom = UDim.new(0, bottom or 6),
+		PaddingLeft = UDim.new(0, left or 10),
+		PaddingRight = UDim.new(0, right or 10),
+		PaddingTop = UDim.new(0, top or 6)
 	})
 end)
 
@@ -541,8 +457,7 @@ CreateElement("ScrollFrame", function(color, width)
 		ScrollBarThickness = width,
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		ScrollingDirection = Enum.ScrollingDirection.Y,
-		AutomaticCanvasSize = Enum.AutomaticSize.None,
-		MidImage = "rbxassetid://7445543667"
+		AutomaticCanvasSize = Enum.AutomaticSize.None
 	})
 end)
 
@@ -567,13 +482,24 @@ CreateElement("Label", function(text, textSize, transparency)
 		RichText = true,
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Center,
-		BorderSizePixel = 0
+		TextYAlignment = Enum.TextYAlignment.Center
 	})
 end)
 
--- Notifications (will be created after ScreenGui setup)
-local NotificationHolder
+-- Notifications
+local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
+	SetProps(MakeElement("List"), {
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		Padding = UDim.new(0, 8)
+	})
+}), {
+	Position = UDim2.new(1, -24, 1, -24),
+	Size = UDim2.new(0, 320, 1, -24),
+	AnchorPoint = Vector2.new(1, 1),
+	Parent = Nexac
+})
 
 function NexacLib:MakeNotification(cfg)
 	task.spawn(function()
@@ -582,23 +508,6 @@ function NexacLib:MakeNotification(cfg)
 		cfg.Content = cfg.Content or "Test"
 		cfg.Image = cfg.Image or "rbxassetid://4384403532"
 		cfg.Time = cfg.Time or 6
-
-		-- Create notification holder if it doesn't exist
-		if not NotificationHolder then
-			NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
-				SetProps(MakeElement("List"), {
-					HorizontalAlignment = Enum.HorizontalAlignment.Center,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Bottom,
-					Padding = UDim.new(0, 8)
-				})
-			}), {
-				Position = UDim2.new(1, -24, 1, -24),
-				Size = UDim2.new(0, 320, 1, -24),
-				AnchorPoint = Vector2.new(1, 1),
-				Parent = Nexac
-			})
-		end
 
 		local t = NexacLib.Themes[NexacLib.SelectedTheme]
 
@@ -641,19 +550,17 @@ function NexacLib:MakeNotification(cfg)
 		ApplyCard(frame, {shadow = true, transparency = 0.02})
 		EnsureStroke(frame, t.Stroke, 1, 0.40)
 
-		TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+		TweenService:Create(frame, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+		task.wait(math.max(0.1, cfg.Time - 1.0))
 
-		task.wait(cfg.Time - 0.88)
-		TweenService:Create(frame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
-		TweenService:Create(frame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.6}):Play()
-		task.wait(0.3)
-		TweenService:Create(frame:FindFirstChildOfClass("UIStroke"), TweenInfo.new(0.6, Enum.EasingStyle.Quint), {Transparency = 0.9}):Play()
-		TweenService:Create(frame.Title, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
-		TweenService:Create(frame.Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
-		task.wait(0.05)
+		TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.35}):Play()
+		TweenService:Create(frame.Icon, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.6}):Play()
+		TweenService:Create(frame.Title, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.35}):Play()
+		TweenService:Create(frame.Content, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.45}):Play()
 
-		frame:TweenPosition(UDim2.new(1, 20, 0, 0), "In", "Quint", 0.8, true)
-		task.wait(1.35)
+		task.wait(0.15)
+		frame:TweenPosition(UDim2.new(1, 60, 0, 0), "In", "Quint", 0.45, true)
+		task.wait(0.6)
 		parent:Destroy()
 	end)
 end
@@ -674,6 +581,13 @@ function NexacLib:Init()
 			end
 		end)
 	end
+end
+
+function NexacLib:SetTheme(themeName)
+	if type(themeName) ~= "string" then return end
+	if not NexacLib.Themes[themeName] then return end
+	NexacLib.SelectedTheme = themeName
+	SetTheme()
 end
 
 -- Window
@@ -714,11 +628,11 @@ function NexacLib:MakeWindow(cfg)
 		ZIndex = 10
 	}), {
 	}), "Main")
+
+	ApplyCard(MainWindow, {shadow = true, transparency = 0.00, gradient = true})
 	
 	-- Add to Windows table for UI visibility tracking
 	table.insert(NexacLib.Windows, MainWindow)
-
-	ApplyCard(MainWindow, {shadow = true, transparency = 0.00, gradient = true})
 
 	-- TopBar
 	local DragPoint = SetProps(MakeElement("TFrame"), {

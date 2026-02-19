@@ -1144,6 +1144,13 @@ local function createMainUI(lockedFeatures, safetyIssues)
 	NexacLib.Themes.Phantom = PhantomTheme
 	NexacLib.SelectedTheme = "Phantom"
 	
+	-- Apply the theme immediately to ensure proper rendering
+	pcall(function()
+		if NexacLib.SetTheme then
+			NexacLib:SetTheme("Phantom")
+		end
+	end)
+	
 	-- Apply custom theme through Nexac's built-in methods
 	NexacLib:MakeNotification({
 		Name = "Theme Applied",
@@ -1151,6 +1158,23 @@ local function createMainUI(lockedFeatures, safetyIssues)
 		Time = 2,
 		Image = "rbxassetid://7733658168"
 	})
+	
+	-- Ensure UI is fully visible and interactive
+	task.wait(0.1) -- Allow UI to fully initialize
+	
+	-- Verify window is visible
+	if NexacLib.Windows and #NexacLib.Windows > 0 then
+		local mainWindow = NexacLib.Windows[1]
+		if mainWindow then
+			mainWindow.Visible = true
+			NexacLib.UI.Enabled = true
+			
+			-- Force theme reapplication to ensure all elements are styled
+			pcall(function()
+				NexacLib:SetTheme("Phantom")
+			end)
+		end
+	end
 	
 	-- Create enhanced tabs with unique icons and better organization
 	local Status = Window:MakeTab({Name = "📊 Dashboard", Icon = "rbxassetid://7733658168"})
