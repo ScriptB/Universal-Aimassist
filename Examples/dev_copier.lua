@@ -3,13 +3,52 @@
 	Designed for easy script distribution and sharing
 	
 	Features:
+	- Custom chat command copying
 	- Automatic clipboard copying
 	- Loadstring generation
 	- Manual copy fallback
 	- Error handling
+	
+	Chat Command: -datcopy
 ]]
 
 print("🔧 Loading Dev Copier...")
+
+-- ===================================
+-- CHAT COMMAND SYSTEM
+-- ===================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Chat command handler
+local function onChatMessage(message)
+	if message == "-datcopy" then
+		devCopy()
+	end
+end
+
+-- Connect to chat
+local chatConnection
+local function setupChatListener()
+	if LocalPlayer then
+		-- Try to connect to chat service
+		local success, result = pcall(function()
+			return game:GetService("TextChatService").MessageReceived:Connect(function(message)
+				if message.TextInput == "-datcopy" and message.FromUserId == LocalPlayer.UserId then
+					devCopy()
+				end
+			end)
+		end)
+		
+		if not success then
+			-- Fallback to legacy chat
+			pcall(function()
+				chatConnection = LocalPlayer.Chatted:Connect(onChatMessage)
+			end)
+		end
+	end
+end
 
 -- ===================================
 -- DEV COPIER FUNCTIONS
@@ -70,6 +109,10 @@ loadstring(game:HttpGet("%s"))()
     print("🌐 Script URL:", scriptUrl)
 end
 
+-- ===================================
+-- EXPORT FUNCTIONS
+-- ===================================
+
 -- Export dev copier function
 getgenv().devCopy = devCopy
 print("🔧 Dev copier functions exported to getgenv().devCopy")
@@ -90,8 +133,15 @@ getgenv().copyScriptUrl = function()
     return url
 end
 
+-- ===================================
+-- INITIALIZE CHAT COMMANDS
+-- ===================================
+
+setupChatListener()
+
 print("✅ Dev Copier loaded successfully!")
 print("📋 Available commands:")
-print("  - getgenv().devCopy() - Copy loadstring version")
-print("  - getgenv().getScriptUrl() - Get script URL")
-print("  - getgenv().copyScriptUrl() - Copy script URL")
+print("  - Chat: -datcopy (Copy loadstring version)")
+print("  - Function: getgenv().devCopy() - Copy loadstring version")
+print("  - Function: getgenv().getScriptUrl() - Get script URL")
+print("  - Function: getgenv().copyScriptUrl() - Copy script URL")
