@@ -411,7 +411,14 @@ local AnimationTweens = {}
 local function createDrawing(type, properties)
 	local drawing = Drawing.new(type)
 	for prop, value in pairs(properties) do
-		drawing[prop] = value
+		-- Safely set properties, skip unsupported ones
+		local success, error = pcall(function()
+			drawing[prop] = value
+		end)
+		if not success then
+			-- Silently skip unsupported properties like AntiAliasing
+			-- This ensures compatibility across different Drawing API implementations
+		end
 	end
 	return drawing
 end
