@@ -2696,6 +2696,54 @@ local function Initialize()
     return true
 end
 
+-- Make sure VisualInterface is defined before using it
+if not VisualInterface or not VisualInterface.CreateDisplayPanel then
+    warn("❌ VisualInterface not properly defined! Initializing default implementation...")
+    
+    -- Fallback implementation
+    VisualInterface = {}
+    VisualInterface.CreateDisplayPanel = function(title, position)
+        local panel = {
+            Title = title or "Universal ESP Pro Enhanced",
+            Visible = true,
+            Position = position or Vector2.new(20, 20),
+            Size = Vector2.new(550, 400),
+            Categories = {},
+        }
+        
+        -- Basic panel methods
+        function panel:SetVisibility(visible)
+            self.Visible = visible
+            -- Update visibility of all elements
+        end
+        
+        function panel:CreateCategory(name)
+            local category = {
+                Name = name,
+                Visible = false,
+                Elements = {},
+                AddModule = function(self, title)
+                    local module = {
+                        Title = title,
+                        Elements = {},
+                        AddToggle = function() return {} end,
+                        AddSlider = function() return {} end,
+                        AddDropdown = function() return {} end,
+                        AddButton = function() return {} end,
+                        AddLabel = function() return {} end,
+                        AddColorPicker = function() return {} end,
+                    }
+                    return module
+                end
+            }
+            table.insert(self.Categories, category)
+            return category
+        end
+        
+        return panel
+    end
+end
+
 -- Start the ESP
 local success = Initialize()
 
