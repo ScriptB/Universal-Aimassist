@@ -188,12 +188,12 @@ detectExecutor()
 -- ===================================
 
 local function createMainUI()
-    -- Create Bracket window using correct API
+    -- Create Bracket window using correct API (thinner UI)
     local Window = Bracket:Window({
-        Name = "Phantom Suite v7.8 - Bracket UI",
+        Name = "Phantom Suite v7.8.1 - Bracket UI",
         Color = Color3.new(0.5, 0.25, 1),
-        Size = UDim2.new(0, 600, 0, 450),
-        Position = UDim2.new(0.5, -300, 0.5, -225)
+        Size = UDim2.new(0, 500, 0, 400),
+        Position = UDim2.new(0.5, -250, 0.5, -200)
     })
     
     -- Create tabs
@@ -231,6 +231,7 @@ local function createMainUI()
         Unit = "",
         Callback = function(value)
             aimFov = value
+            print("Aimbot FOV:", value)
         end
     })
     
@@ -243,6 +244,7 @@ local function createMainUI()
         Unit = "",
         Callback = function(value)
             smoothing = value
+            print("Aimbot Smoothing:", value)
         end
     })
     
@@ -255,6 +257,7 @@ local function createMainUI()
         Unit = "",
         Callback = function(value)
             predictionStrength = value
+            print("Aimbot Prediction:", value)
         end
     })
     
@@ -280,6 +283,35 @@ local function createMainUI()
         Value = healthCheck,
         Callback = function(state)
             healthCheck = state
+        end
+    })
+    
+    AimbotTab:Toggle({
+        Name = "Blatant Mode",
+        Value = blatantEnabled,
+        Callback = function(state)
+            blatantEnabled = state
+            print("Blatant Mode:", state and "ON" or "OFF")
+            -- Apply blatant mode effects
+            if blatantEnabled then
+                -- Max settings for blatant mode
+                aimFov = 500
+                smoothing = 1
+                predictionStrength = 0.1
+                wallCheck = false
+                teamCheck = false
+                healthCheck = false
+                print("🔥 Blatant mode activated - Max settings applied!")
+            else
+                -- Reset to default settings
+                aimFov = 100
+                smoothing = 5
+                predictionStrength = 0.065
+                wallCheck = true
+                teamCheck = true
+                healthCheck = false
+                print("🛡️ Blatant mode deactivated - Default settings restored!")
+            end
         end
     })
     
@@ -389,6 +421,39 @@ local function createMainUI()
         Unit = "",
         Callback = function(value)
             flySpeed = value
+            print("Fly Speed:", value)
+        end
+    })
+    
+    ExtrasTab:Slider({
+        Name = "Walk Speed",
+        Min = 16,
+        Max = 200,
+        Value = walkSpeed,
+        Precise = 0,
+        Unit = "",
+        Callback = function(value)
+            walkSpeed = value
+            if plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+                plr.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+            end
+            print("Walk Speed:", value)
+        end
+    })
+    
+    ExtrasTab:Slider({
+        Name = "Jump Power",
+        Min = 50,
+        Max = 200,
+        Value = jumpPower,
+        Precise = 0,
+        Unit = "",
+        Callback = function(value)
+            jumpPower = value
+            if plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+                plr.Character:FindFirstChildOfClass("Humanoid").JumpPower = value
+            end
+            print("Jump Power:", value)
         end
     })
     
@@ -870,6 +935,13 @@ local function main()
                 startInfJump()
             else
                 stopInfJump()
+            end
+            
+            -- Apply movement settings
+            local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = walkSpeed
+                humanoid.JumpPower = jumpPower
             end
         end
     end)
