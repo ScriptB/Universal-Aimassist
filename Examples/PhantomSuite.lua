@@ -1,5 +1,5 @@
 --[[
-	Phantom Suite v7.8 (Bracket UI Integration)
+	Phantom Suite v7.8.1 (Bracket UI Integration - Fixed)
 	by Asuneteric (Updated for Bracket Library)
 
 	Precision aimbot and ESP for competitive advantage.
@@ -10,11 +10,14 @@
 	  - Full real-time Bracket UI controls
 	  - HWID-keyed config auto-save/load (Phantom-Config.txt)
 	  - Modern Bracket UI integration
+	  - Fixed Drawing service detection
 ]]
 
 -- ===================================
 -- DEVELOPER CONSOLE COPIER
 -- ===================================
+
+print("🚀 Loading Phantom Suite v7.8.1 (Fixed)...")
 
 -- Try to load Dev Console Copier with fallback
 local success, result = pcall(function()
