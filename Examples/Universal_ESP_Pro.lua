@@ -414,28 +414,59 @@ local function updateArrowESP(player, arrow)
 	
 	-- Only show arrow when player is off-screen
 	if not onScreen then
-		-- Calculate direction to player
-		local direction = (rootPart.Position - Camera.CFrame.Position).Unit
-		local screenCenter = Camera.ViewportSize / 2
+		-- Get player position relative to camera
+		local playerPos = rootPart.Position
+		local cameraPos = Camera.CFrame.Position
+		local cameraLook = Camera.CFrame.LookVector
 		
-		-- Project direction to screen
-		local angle = math.atan2(direction.Z, direction.X)
-		local screenAngle = angle - math.pi/2
+		-- Calculate direction vector from camera to player
+		local direction = (playerPos - cameraPos).Unit
+		
+		-- Transform direction to camera space
+		local cameraRight = Camera.CFrame.RightVector
+		local cameraUp = Camera.CFrame.UpVector
+		
+		-- Project direction onto camera's right and up vectors
+		local rightDot = direction:Dot(cameraRight)
+		local upDot = direction:Dot(cameraUp)
+		
+		-- Calculate angle for arrow rotation
+		local angle = math.atan2(upDot, rightDot)
 		
 		-- Calculate arrow position on screen edge
+		local screenCenter = Camera.ViewportSize / 2
 		local distance = ESPConfig.Arrow.Distance
-		local arrowX = screenCenter.X + math.cos(screenAngle) * distance
-		local arrowY = screenCenter.Y + math.sin(screenAngle) * distance
 		
-		-- Create triangle points
+		-- Find intersection with screen edge
+		local maxDist = math.min(screenCenter.X, screenCenter.Y) - 20
+		local arrowX = screenCenter.X + math.cos(angle) * math.min(distance, maxDist)
+		local arrowY = screenCenter.Y + math.sin(angle) * math.min(distance, maxDist)
+		
+		-- Clamp to screen bounds
+		arrowX = math.max(20, math.min(Camera.ViewportSize.X - 20, arrowX))
+		arrowY = math.max(20, math.min(Camera.ViewportSize.Y - 20, arrowY))
+		
+		-- Create rotated triangle points
 		local size = ESPConfig.Arrow.Size
-		local point1 = Vector2.new(arrowX, arrowY - size)
-		local point2 = Vector2.new(arrowX - size/2, arrowY + size/2)
-		local point3 = Vector2.new(arrowX + size/2, arrowY + size/2)
+		local cosAngle = math.cos(angle)
+		local sinAngle = math.sin(angle)
 		
-		arrow.PointA = point1
-		arrow.PointB = point2
-		arrow.PointC = point3
+		-- Triangle points relative to arrow center (pointing toward player)
+		local tip = Vector2.new(size, 0)
+		local left = Vector2.new(-size/2, size/2)
+		local right = Vector2.new(-size/2, -size/2)
+		
+		-- Rotate points to point in correct direction
+		local rotatePoint = function(point)
+			return Vector2.new(
+				point.x * cosAngle - point.y * sinAngle + arrowX,
+				point.x * sinAngle + point.y * cosAngle + arrowY
+			)
+		end
+		
+		arrow.PointA = rotatePoint(tip)
+		arrow.PointB = rotatePoint(left)
+		arrow.PointC = rotatePoint(right)
 		arrow.Visible = true
 	else
 		arrow.Visible = false
