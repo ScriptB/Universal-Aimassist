@@ -827,7 +827,11 @@ local UI = {
 			Name = "FOV Color",
 			Value = Config.Visual.fovColor,
 			Callback = function(color)
-				Config.Visual.fovColor = color
+				if type(color) == "table" and color.r and color.g and color.b then
+					Config.Visual.fovColor = Color3.new(color.r, color.g, color.b)
+				elseif typeof(color) == "Color3" then
+					Config.Visual.fovColor = color
+				end
 				FOVCircle.update()
 				print("FOV Color updated")
 			end
@@ -837,7 +841,11 @@ local UI = {
 			Name = "ESP Color",
 			Value = Config.Visual.espColor,
 			Callback = function(color)
-				Config.Visual.espColor = color
+				if type(color) == "table" and color.r and color.g and color.b then
+					Config.Visual.espColor = Color3.new(color.r, color.g, color.b)
+				elseif typeof(color) == "Color3" then
+					Config.Visual.espColor = color
+				end
 				print("ESP Color updated")
 			end
 		})
