@@ -20,13 +20,11 @@
 	- Distance ESP (distance-based scaling)
 ]]
 
-print("🚀 Loading Universal ESP Pro...")
-
 -- ===================================
--- DEV COPY INTEGRATION
+-- DEV COPY INTEGRATION (FIRST)
 -- ===================================
 
--- Load DevCopy functionality without modification
+-- Load DevCopy functionality immediately without any interference
 local success, devCopyLoaded = pcall(function()
     return loadstring([===[
 -- Improved, cleaner, safer, and adds "Copy All" feature
@@ -187,6 +185,8 @@ if success and devCopyLoaded then
 else
     print("⚠️ DevCopy integration failed, continuing without it...")
 end
+
+print("🚀 Loading Universal ESP Pro...")
 
 -- ===================================
 -- SERVICES AND VARIABLES
