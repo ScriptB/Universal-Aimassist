@@ -509,48 +509,217 @@ local function getClosestPlayer()
 end
 
 -- ===================================
+-- ESP FUNCTIONS
+-- ===================================
+
+local espObjects = {}
+local Drawing = rawget(game, "Drawing")
+local drawingAvailable = Drawing and pcall(function() return Drawing.new("Circle") end) and pcall(function() return Drawing.new("Square") end)
+
+local function createESP(player)
+    if not drawingAvailable or not espEnabled then return end
+    
+    -- Clean up old ESP objects
+    if espObjects[player] then
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Remove then
+                obj:Remove()
+            end
+        end
+    end
+    
+    espObjects[player] = {}
+    
+    -- Create ESP objects
+    if boxEsp then
+        local box = Drawing.new("Square")
+        box.Thickness = 1
+        box.Color = espColor
+        box.Transparency = 1
+        box.Visible = false
+        table.insert(espObjects[player], box)
+    end
+    
+    if nameEsp then
+        local name = Drawing.new("Text")
+        name.Size = 13
+        name.Color = espColor
+        name.Center = true
+        name.Outline = true
+        name.Visible = false
+        table.insert(espObjects[player], name)
+    end
+    
+    if healthEsp then
+        local healthBar = Drawing.new("Square")
+        healthBar.Thickness = 1
+        healthBar.Color = Color3.fromRGB(0, 255, 0)
+        healthBar.Transparency = 1
+        healthBar.Visible = false
+        table.insert(espObjects[player], healthBar)
+    end
+    
+    if tracerEsp then
+        local tracer = Drawing.new("Line")
+        tracer.Thickness = 1
+        tracer.Color = espColor
+        tracer.Transparency = 1
+        tracer.Visible = false
+        table.insert(espObjects[player], tracer)
+    end
+end
+
+local function updateESP(player)
+    if not drawingAvailable or not espEnabled or not espObjects[player] then return end
+    
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    
+    if not character or not humanoid or not rootPart then
+        -- Hide ESP if character doesn't exist
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Visible ~= nil then
+                obj.Visible = false
+            end
+        end
+        return
+    end
+    
+    -- Team check
+    if teamCheck and player.Team == plr.Team then
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Visible ~= nil then
+                obj.Visible = false
+            end
+        end
+        return
+    end
+    
+    local position, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+    
+    if not onScreen then
+        -- Hide ESP if off screen
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Visible ~= nil then
+                obj.Visible = false
+            end
+        end
+        return
+    end
+    
+    -- Update ESP objects
+    local objIndex = 1
+    
+    -- Box ESP
+    if boxEsp and espObjects[player][objIndex] then
+        local box = espObjects[player][objIndex]
+        local size = rootPart.Size.Y * 2
+        local scaleFactor = (size / (position.Z * math.tan(math.rad(camera.FieldOfView / 2))))
+        
+        box.Size = Vector2.new(scaleFactor, scaleFactor * 1.5)
+        box.Position = Vector2.new(position.X - box.Size.X / 2, position.Y - box.Size.Y / 2)
+        box.Color = espColor
+        box.Visible = espEnabled
+        objIndex = objIndex + 1
+    end
+    
+    -- Name ESP
+    if nameEsp and espObjects[player][objIndex] then
+        local name = espObjects[player][objIndex]
+        name.Text = player.Name .. " [" .. math.floor((rootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude) .. "m]"
+        name.Position = Vector2.new(position.X, position.Y - 20)
+        name.Color = espColor
+        name.Visible = espEnabled
+        objIndex = objIndex + 1
+    end
+    
+    -- Health ESP
+    if healthEsp and espObjects[player][objIndex] then
+        local healthBar = espObjects[player][objIndex]
+        local healthPercent = humanoid.Health / humanoid.MaxHealth
+        
+        healthBar.Size = Vector2.new(4, 50)
+        healthBar.Position = Vector2.new(position.X - 30, position.Y - 25)
+        healthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+        healthBar.Visible = espEnabled
+        objIndex = objIndex + 1
+    end
+    
+    -- Tracer ESP
+    if tracerEsp and espObjects[player][objIndex] then
+        local tracer = espObjects[player][objIndex]
+        tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+        tracer.To = Vector2.new(position.X, position.Y)
+        tracer.Color = espColor
+        tracer.Visible = espEnabled
+        objIndex = objIndex + 1
+    end
+end
+
+local function cleanupESP(player)
+    if espObjects[player] then
+        for _, obj in pairs(espObjects[player]) do
+            if obj and obj.Remove then
+                obj:Remove()
+            end
+        end
+        espObjects[player] = nil
+    end
+end
+
+-- ===================================
 -- MOVEMENT FUNCTIONS
 -- ===================================
 
+local flyConnection = nil
+local noclipConnection = nil
+local infJumpConnection = nil
+
 local function startFly()
-    if not flyEnabled then return end
+    if flyConnection then return end
     
-    local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-    end
-    
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
+    flyConnection = RunService.Heartbeat:Connect(function()
         if not flyEnabled then
-            connection:Disconnect()
+            if flyConnection then
+                flyConnection:Disconnect()
+                flyConnection = nil
+            end
             return
         end
         
-        local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
+        local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            local moveDirection = plr.Character.PrimaryPart.CFrame:VectorToWorldSpace(Vector3.new(
+            local moveDirection = Vector3.new(
                 (UserInputService:IsKeyDown(Enum.KeyCode.W) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0),
                 0,
                 (UserInputService:IsKeyDown(Enum.KeyCode.D) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.A) and 1 or 0)
-            ))
+            )
             
-            humanoid:Move(moveDirection * flySpeed)
+            if moveDirection ~= Vector3.new(0, 0, 0) then
+                humanoid:Move(moveDirection * flySpeed)
+            end
         end
     end)
 end
 
 local function stopFly()
     flyEnabled = false
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
 end
 
 local function startNoclip()
-    if not noclipEnabled then return end
+    if noclipConnection then return end
     
-    local connection
-    connection = RunService.Stepped:Connect(function()
+    noclipConnection = RunService.Stepped:Connect(function()
         if not noclipEnabled then
-            connection:Disconnect()
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
             return
         end
         
@@ -566,6 +735,32 @@ end
 
 local function stopNoclip()
     noclipEnabled = false
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+end
+
+local function startInfJump()
+    if infJumpConnection then return end
+    
+    infJumpConnection = UserInputService.JumpRequest:Connect(function()
+        if infJumpEnabled then
+            local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Jump = true
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+end
+
+local function stopInfJump()
+    infJumpEnabled = false
+    if infJumpConnection then
+        infJumpConnection:Disconnect()
+        infJumpConnection = nil
+    end
 end
 
 -- ===================================
@@ -578,6 +773,25 @@ local function main()
     
     -- Show success message
     print("✅ Phantom Suite v7.8 loaded successfully with Bracket UI!")
+    
+    -- Setup ESP for existing players
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= plr then
+            createESP(player)
+        end
+    end
+    
+    -- Player added event
+    players.PlayerAdded:Connect(function(player)
+        if player ~= plr then
+            createESP(player)
+        end
+    end)
+    
+    -- Player removing event
+    players.PlayerRemoving:Connect(function(player)
+        cleanupESP(player)
+    end)
     
     -- Main loops
     task.spawn(function()
@@ -619,6 +833,27 @@ local function main()
                 startNoclip()
             else
                 stopNoclip()
+            end
+            
+            if infJumpEnabled then
+                startInfJump()
+            else
+                stopInfJump()
+            end
+        end
+    end)
+    
+    -- ESP update loop
+    task.spawn(function()
+        while true do
+            task.wait(0.1) -- Update ESP every 100ms for performance
+            
+            if espEnabled and drawingAvailable then
+                for _, player in pairs(players:GetPlayers()) do
+                    if player ~= plr then
+                        updateESP(player)
+                    end
+                end
             end
         end
     end)
