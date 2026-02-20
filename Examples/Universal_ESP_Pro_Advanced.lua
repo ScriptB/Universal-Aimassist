@@ -978,54 +978,33 @@ end
 -- ===================================
 
 if bracketSuccess and Bracket then
-    -- Create notification system with custom styling
+    -- Create a simple notification
     local Notify = Bracket:Notification({
         Title = "Universal ESP Pro Advanced",
         Description = "ESP system loaded successfully!",
-        Duration = 5,
-        TitleColor = Color3.fromRGB(255, 255, 255),
-        DescriptionColor = Color3.fromRGB(200, 200, 255),
-        TitleTextSize = 17,
-        DescriptionTextSize = 14,
-        TitleFont = Enum.Font.SourceSansBold,
-        DescriptionFont = Enum.Font.SourceSans
+        Duration = 5
     })
     
-    -- Create main window with improved styling
+    -- Create a basic window
     local Window = Bracket:Window({
         Title = "Universal ESP Pro Advanced",
-        Subtitle = "by ScriptB",
         Position = UDim2.new(0.05, 0, 0.5, 0),
-        Size = UDim2.new(0, 580, 0, 480),
-        Transparency = 0.92,
-        TitleColor = Color3.fromRGB(255, 255, 255),
-        TitleTextSize = 18,
-        TitleFont = Enum.Font.GothamBold,
-        BackgroundColor = Color3.fromRGB(30, 30, 35),
-        BorderColor = Color3.fromRGB(60, 60, 80),
-        BorderThickness = 1
+        Size = UDim2.new(0, 400, 0, 350)
     })
     
-    -- Create tabs with icons for better visual identification
-    local MainTab = Window:Tab({ Title = "Main", Icon = "home" })
-    local BoxESPTab = Window:Tab({ Title = "Box ESP", Icon = "square" })
-    local TracerTab = Window:Tab({ Title = "Tracers", Icon = "trending-up" })
-    local SkeletonTab = Window:Tab({ Title = "Skeleton", Icon = "activity" })
-    local ChamsTab = Window:Tab({ Title = "Chams", Icon = "layers" })
-    local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
+    -- Create a single tab for all controls
+    local MainTab = Window:Tab({ Title = "ESP Controls" })
     
-    -- Main Tab with master controls and status display
+    -- Main controls section
     local MainSection = MainTab:Section({
-        Title = "ESP Master Controls",
-        Icon = "power",
+        Title = "ESP Controls",
         Side = "Left"
     })
     
+    -- Master toggle
     MainSection:Toggle({
         Title = "Enable ESP",
-        Description = "Master switch for all ESP features",
         Default = Settings.Enabled,
-        Icon = "eye",
         Callback = function(state)
             Settings.Enabled = state
             if not state then
@@ -1034,11 +1013,10 @@ if bracketSuccess and Bracket then
         end
     })
     
+    -- Team settings
     MainSection:Toggle({
         Title = "Team Check",
-        Description = "Use different colors for teammates",
         Default = Settings.TeamCheck,
-        Icon = "users",
         Callback = function(state)
             Settings.TeamCheck = state
         end
@@ -1046,72 +1024,66 @@ if bracketSuccess and Bracket then
     
     MainSection:Toggle({
         Title = "Show Teammates",
-        Description = "Display ESP for players on your team",
         Default = Settings.ShowTeam,
-        Icon = "user-check",
         Callback = function(state)
             Settings.ShowTeam = state
         end
     })
     
-    local DistanceSection = MainTab:Section({
-        Title = "Distance & Performance",
-        Icon = "sliders",
-        Side = "Left"
-    })
-    
-    DistanceSection:Slider({
+    -- Distance settings
+    MainSection:Slider({
         Title = "Max Distance",
-        Description = "Maximum render distance for ESP",
         Default = Settings.MaxDistance,
         Min = 100,
         Max = 5000,
-        Increment = 100,
-        ValueFormat = "%d studs",
         Callback = function(value)
             Settings.MaxDistance = value
         end
     })
     
-    DistanceSection:Toggle({
-        Title = "Distance Culling",
-        Description = "Hide ESP for distant players",
-        Default = Settings.Performance.DistanceCulling,
-        Callback = function(state)
-            Settings.Performance.DistanceCulling = state
-        end
-    })
-    
-    DistanceSection:Toggle({
-        Title = "Occlusion Culling",
-        Description = "Hide ESP for players behind walls",
-        Default = Settings.Performance.OcclusionCulling,
-        Callback = function(state)
-            Settings.Performance.OcclusionCulling = state
-        end
-    })
-    
+    -- ESP Features
     local FeaturesSection = MainTab:Section({
         Title = "ESP Features",
-        Icon = "list",
         Side = "Right"
     })
     
     FeaturesSection:Toggle({
         Title = "Box ESP",
-        Description = "Show boxes around players",
         Default = Settings.BoxESP,
-        Icon = "square",
         Callback = function(state)
             Settings.BoxESP = state
         end
     })
     
+    -- Box style toggles
+    FeaturesSection:Toggle({
+        Title = "Corner Box Style",
+        Default = Settings.BoxStyle == "Corner" or not Settings.BoxStyle,
+        Callback = function(state)
+            if state then Settings.BoxStyle = "Corner" end
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "Full Box Style",
+        Default = Settings.BoxStyle == "Full",
+        Callback = function(state)
+            if state then Settings.BoxStyle = "Full" end
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "3D Box Style",
+        Default = Settings.BoxStyle == "ThreeD",
+        Callback = function(state)
+            if state then Settings.BoxStyle = "ThreeD" end
+        end
+    })
+    
+    -- Other ESP features
     FeaturesSection:Toggle({
         Title = "Name ESP",
-        Description = "Show player names",
         Default = Settings.NameESP,
-        Icon = "type",
         Callback = function(state)
             Settings.NameESP = state
         end
@@ -1119,9 +1091,7 @@ if bracketSuccess and Bracket then
     
     FeaturesSection:Toggle({
         Title = "Tracer ESP",
-        Description = "Show lines pointing to players",
         Default = Settings.TracerESP,
-        Icon = "trending-up",
         Callback = function(state)
             Settings.TracerESP = state
         end
@@ -1129,9 +1099,7 @@ if bracketSuccess and Bracket then
     
     FeaturesSection:Toggle({
         Title = "Health ESP",
-        Description = "Show health bars",
         Default = Settings.HealthESP,
-        Icon = "heart",
         Callback = function(state)
             Settings.HealthESP = state
         end
@@ -1139,9 +1107,7 @@ if bracketSuccess and Bracket then
     
     FeaturesSection:Toggle({
         Title = "Skeleton ESP",
-        Description = "Show player bone structure",
         Default = Settings.SkeletonESP,
-        Icon = "activity",
         Callback = function(state)
             Settings.SkeletonESP = state
         end
@@ -1149,45 +1115,12 @@ if bracketSuccess and Bracket then
     
     FeaturesSection:Toggle({
         Title = "Chams",
-        Description = "Show player highlights",
         Default = Settings.ChamsEnabled,
-        Icon = "layers",
         Callback = function(state)
             Settings.ChamsEnabled = state
         end
     })
-    
-    local EffectsSection = MainTab:Section({
-        Title = "Visual Effects",
-        Icon = "droplet",
-        Side = "Right"
-    })
-    
-    EffectsSection:Toggle({
-        Title = "Rainbow Effect",
-        Description = "Apply rainbow color cycling",
-        Default = Settings.RainbowEnabled,
-        Icon = "rainbow",
-        Callback = function(state)
-            Settings.RainbowEnabled = state
-        end
-    })
-    
-    EffectsSection:Slider({
-        Title = "Rainbow Speed",
-        Description = "Speed of color cycling",
-        Default = Settings.RainbowSpeed,
-        Min = 0.1,
-        Max = 5,
-        Decimals = 1,
-        ValueFormat = "%.1fx",
-        Callback = function(value)
-            Settings.RainbowSpeed = value
-        end
-    })
-    
-    -- Box ESP Tab with detailed box customization
-    local BoxEnableSection = BoxESPTab:Section({
+end
         Title = "Box ESP Settings",
         Icon = "square",
         Side = "Left"
@@ -2316,26 +2249,66 @@ if bracketSuccess and Bracket then
         Window.Enabled = not Window.Enabled
     end
     
-    -- Keybind configuration
-    local KeybindSection = SettingsTab:Section({
-        Title = "Keybinds",
-        Icon = "key",
-        Side = "Right"
+    -- Control buttons
+    local ControlSection = MainTab:Section({
+        Title = "Controls",
+        Side = "Left"
     })
     
-    KeybindSection:Label({
-        Title = "Toggle UI",
-        Description = "Press Left Ctrl to show/hide the UI",
-        Icon = "eye"
+    ControlSection:Button({
+        Title = "Reset Settings",
+        Callback = function()
+            CleanupESP()
+            
+            Settings = {
+                Enabled = false,
+                TeamCheck = false,
+                ShowTeam = false,
+                BoxESP = false,
+                BoxStyle = "Corner",
+                TracerESP = false,
+                TracerOrigin = "Bottom",
+                HealthESP = false,
+                NameESP = false,
+                SkeletonESP = false,
+                ChamsEnabled = false,
+                MaxDistance = 1000
+            }
+            
+            Notify:Update({
+                Title = "Settings Reset",
+                Description = "All ESP settings have been reset to default"
+            })
+        end
     })
     
-    KeybindSection:Label({
-        Title = "Hide UI",
-        Description = "Press Delete to hide the UI",
-        Icon = "eye-off"
+    ControlSection:Button({
+        Title = "Unload ESP",
+        Callback = function()
+            CleanupESP()
+            Window:Destroy()
+            
+            Notify:Update({
+                Title = "ESP Unloaded",
+                Description = "Universal ESP Pro Advanced has been unloaded"
+            })
+        end
+    })
+    
+    -- Keybind info
+    ControlSection:Label({
+        Title = "Press Left Ctrl to toggle UI"
+    })
+    
+    ControlSection:Label({
+        Title = "Press Delete to hide UI"
     })
     
     -- Left Ctrl to toggle UI
+    local function toggleUI()
+        Window.Enabled = not Window.Enabled
+    end
+    
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed then
             if input.KeyCode == Enum.KeyCode.LeftControl then
@@ -2346,15 +2319,12 @@ if bracketSuccess and Bracket then
         end
     end)
     
-    -- Final notifications with styled console output
+    -- Final notifications
     print("\n" .. string.rep("=", 40))
-    print("✅ Universal ESP Pro Advanced v2.0")
+    print("✅ Universal ESP Pro Advanced loaded successfully!")
     print("📊 Features: Box ESP, Tracers, Skeleton, Chams & more")
     print("⌨️ Press Left Ctrl to toggle UI | Delete to hide UI")
     print(string.rep("=", 40) .. "\n")
-    
-    -- Initial UI setup
-    Window:SelectTab(1) -- Select Main tab by default
 else
     -- Headless mode (no UI)
     print("\n" .. string.rep("=", 40))
