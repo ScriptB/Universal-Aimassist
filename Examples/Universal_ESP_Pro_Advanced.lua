@@ -978,33 +978,54 @@ end
 -- ===================================
 
 if bracketSuccess and Bracket then
-    -- Create notification system
+    -- Create notification system with custom styling
     local Notify = Bracket:Notification({
         Title = "Universal ESP Pro Advanced",
         Description = "ESP system loaded successfully!",
-        Duration = 5
+        Duration = 5,
+        TitleColor = Color3.fromRGB(255, 255, 255),
+        DescriptionColor = Color3.fromRGB(200, 200, 255),
+        TitleTextSize = 17,
+        DescriptionTextSize = 14,
+        TitleFont = Enum.Font.SourceSansBold,
+        DescriptionFont = Enum.Font.SourceSans
     })
     
-    -- Create main window
+    -- Create main window with improved styling
     local Window = Bracket:Window({
         Title = "Universal ESP Pro Advanced",
+        Subtitle = "by ScriptB",
         Position = UDim2.new(0.05, 0, 0.5, 0),
-        Size = UDim2.new(0, 550, 0, 450),
-        Transparency = 0.8
+        Size = UDim2.new(0, 580, 0, 480),
+        Transparency = 0.92,
+        TitleColor = Color3.fromRGB(255, 255, 255),
+        TitleTextSize = 18,
+        TitleFont = Enum.Font.GothamBold,
+        BackgroundColor = Color3.fromRGB(30, 30, 35),
+        BorderColor = Color3.fromRGB(60, 60, 80),
+        BorderThickness = 1
     })
     
-    -- Create tabs
-    local ESPTab = Window:Tab({ Title = "ESP" })
-    local VisualsTab = Window:Tab({ Title = "Visuals" })
-    local SkeletonTab = Window:Tab({ Title = "Skeleton" })
-    local ChamsTab = Window:Tab({ Title = "Chams" })
-    local SettingsTab = Window:Tab({ Title = "Settings" })
+    -- Create tabs with icons for better visual identification
+    local MainTab = Window:Tab({ Title = "Main", Icon = "home" })
+    local BoxESPTab = Window:Tab({ Title = "Box ESP", Icon = "square" })
+    local TracerTab = Window:Tab({ Title = "Tracers", Icon = "trending-up" })
+    local SkeletonTab = Window:Tab({ Title = "Skeleton", Icon = "activity" })
+    local ChamsTab = Window:Tab({ Title = "Chams", Icon = "layers" })
+    local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
     
-    -- ESP Tab
-    ESPTab:Toggle({
+    -- Main Tab with master controls and status display
+    local MainSection = MainTab:Section({
+        Title = "ESP Master Controls",
+        Icon = "power",
+        Side = "Left"
+    })
+    
+    MainSection:Toggle({
         Title = "Enable ESP",
-        Description = "Toggle all ESP features",
+        Description = "Master switch for all ESP features",
         Default = Settings.Enabled,
+        Icon = "eye",
         Callback = function(state)
             Settings.Enabled = state
             if not state then
@@ -1013,219 +1034,492 @@ if bracketSuccess and Bracket then
         end
     })
     
-    ESPTab:Toggle({
+    MainSection:Toggle({
         Title = "Team Check",
-        Description = "Use team colors for ESP",
+        Description = "Use different colors for teammates",
         Default = Settings.TeamCheck,
+        Icon = "users",
         Callback = function(state)
             Settings.TeamCheck = state
         end
     })
     
-    ESPTab:Toggle({
-        Title = "Show Team",
-        Description = "Show ESP for teammates",
+    MainSection:Toggle({
+        Title = "Show Teammates",
+        Description = "Display ESP for players on your team",
         Default = Settings.ShowTeam,
+        Icon = "user-check",
         Callback = function(state)
             Settings.ShowTeam = state
         end
     })
     
-    ESPTab:Slider({
+    local DistanceSection = MainTab:Section({
+        Title = "Distance & Performance",
+        Icon = "sliders",
+        Side = "Left"
+    })
+    
+    DistanceSection:Slider({
         Title = "Max Distance",
-        Description = "Maximum distance for ESP visibility",
+        Description = "Maximum render distance for ESP",
         Default = Settings.MaxDistance,
         Min = 100,
         Max = 5000,
+        Increment = 100,
+        ValueFormat = "%d studs",
         Callback = function(value)
             Settings.MaxDistance = value
         end
     })
     
-    ESPTab:Divider({ Text = "ESP Types", Side = "Left" })
+    DistanceSection:Toggle({
+        Title = "Distance Culling",
+        Description = "Hide ESP for distant players",
+        Default = Settings.Performance.DistanceCulling,
+        Callback = function(state)
+            Settings.Performance.DistanceCulling = state
+        end
+    })
     
-    ESPTab:Toggle({
+    DistanceSection:Toggle({
+        Title = "Occlusion Culling",
+        Description = "Hide ESP for players behind walls",
+        Default = Settings.Performance.OcclusionCulling,
+        Callback = function(state)
+            Settings.Performance.OcclusionCulling = state
+        end
+    })
+    
+    local FeaturesSection = MainTab:Section({
+        Title = "ESP Features",
+        Icon = "list",
+        Side = "Right"
+    })
+    
+    FeaturesSection:Toggle({
         Title = "Box ESP",
         Description = "Show boxes around players",
         Default = Settings.BoxESP,
-        Side = "Left",
+        Icon = "square",
         Callback = function(state)
             Settings.BoxESP = state
         end
     })
     
-    ESPTab:Dropdown({
+    FeaturesSection:Toggle({
+        Title = "Name ESP",
+        Description = "Show player names",
+        Default = Settings.NameESP,
+        Icon = "type",
+        Callback = function(state)
+            Settings.NameESP = state
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "Tracer ESP",
+        Description = "Show lines pointing to players",
+        Default = Settings.TracerESP,
+        Icon = "trending-up",
+        Callback = function(state)
+            Settings.TracerESP = state
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "Health ESP",
+        Description = "Show health bars",
+        Default = Settings.HealthESP,
+        Icon = "heart",
+        Callback = function(state)
+            Settings.HealthESP = state
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "Skeleton ESP",
+        Description = "Show player bone structure",
+        Default = Settings.SkeletonESP,
+        Icon = "activity",
+        Callback = function(state)
+            Settings.SkeletonESP = state
+        end
+    })
+    
+    FeaturesSection:Toggle({
+        Title = "Chams",
+        Description = "Show player highlights",
+        Default = Settings.ChamsEnabled,
+        Icon = "layers",
+        Callback = function(state)
+            Settings.ChamsEnabled = state
+        end
+    })
+    
+    local EffectsSection = MainTab:Section({
+        Title = "Visual Effects",
+        Icon = "droplet",
+        Side = "Right"
+    })
+    
+    EffectsSection:Toggle({
+        Title = "Rainbow Effect",
+        Description = "Apply rainbow color cycling",
+        Default = Settings.RainbowEnabled,
+        Icon = "rainbow",
+        Callback = function(state)
+            Settings.RainbowEnabled = state
+        end
+    })
+    
+    EffectsSection:Slider({
+        Title = "Rainbow Speed",
+        Description = "Speed of color cycling",
+        Default = Settings.RainbowSpeed,
+        Min = 0.1,
+        Max = 5,
+        Decimals = 1,
+        ValueFormat = "%.1fx",
+        Callback = function(value)
+            Settings.RainbowSpeed = value
+        end
+    })
+    
+    -- Box ESP Tab with detailed box customization
+    local BoxEnableSection = BoxESPTab:Section({
+        Title = "Box ESP Settings",
+        Icon = "square",
+        Side = "Left"
+    })
+    
+    BoxEnableSection:Toggle({
+        Title = "Enable Box ESP",
+        Description = "Show boxes around players",
+        Default = Settings.BoxESP,
+        Icon = "check-square",
+        Callback = function(state)
+            Settings.BoxESP = state
+        end
+    })
+    
+    BoxEnableSection:Dropdown({
         Title = "Box Style",
-        Description = "Style of the ESP box",
+        Description = "Choose box visualization style",
         Default = "Corner",
-        Side = "Left",
+        Icon = "layout",
         List = {"Corner", "Full", "ThreeD"},
         Callback = function(option)
             Settings.BoxStyle = option
         end
     })
     
-    ESPTab:Toggle({
-        Title = "Name ESP",
-        Description = "Show player names",
-        Default = Settings.NameESP,
-        Side = "Left",
+    BoxEnableSection:Toggle({
+        Title = "Box Outline",
+        Description = "Add outline to boxes for better visibility",
+        Default = Settings.BoxOutline,
+        Icon = "square",
         Callback = function(state)
-            Settings.NameESP = state
+            Settings.BoxOutline = state
         end
     })
     
-    ESPTab:Toggle({
-        Title = "Tracer ESP",
+    BoxEnableSection:Toggle({
+        Title = "Filled Boxes",
+        Description = "Fill boxes with transparent color",
+        Default = Settings.BoxFilled,
+        Icon = "square",
+        Callback = function(state)
+            Settings.BoxFilled = state
+        end
+    })
+    
+    local BoxStyleSection = BoxESPTab:Section({
+        Title = "Box Appearance",
+        Icon = "edit",
+        Side = "Left"
+    })
+    
+    BoxStyleSection:Slider({
+        Title = "Box Thickness",
+        Description = "Line thickness for boxes",
+        Default = Settings.BoxThickness,
+        Min = 0.5,
+        Max = 5,
+        Decimals = 1,
+        ValueFormat = "%.1fpx",
+        Callback = function(value)
+            Settings.BoxThickness = value
+        end
+    })
+    
+    BoxStyleSection:Slider({
+        Title = "Corner Length",
+        Description = "Length of corner segments (Corner style)",
+        Default = Settings.Box.CornerLength or 8,
+        Min = 4,
+        Max = 20,
+        ValueFormat = "%dpx",
+        Callback = function(value)
+            if not Settings.Box then Settings.Box = {} end
+            Settings.Box.CornerLength = value
+        end
+    })
+    
+    BoxStyleSection:Slider({
+        Title = "Fill Transparency",
+        Description = "Transparency for filled boxes",
+        Default = Settings.BoxFillTransparency,
+        Min = 0,
+        Max = 1,
+        Decimals = 2,
+        ValueFormat = "%.2f",
+        Callback = function(value)
+            Settings.BoxFillTransparency = value
+        end
+    })
+    
+    local BoxColorSection = BoxESPTab:Section({
+        Title = "Box Colors",
+        Icon = "droplet",
+        Side = "Right"
+    })
+    
+    BoxColorSection:ColorPicker({
+        Title = "Enemy Box Color",
+        Description = "Color for enemy player boxes",
+        Default = Colors.Enemy,
+        Callback = function(color)
+            Colors.Enemy = color
+        end
+    })
+    
+    BoxColorSection:ColorPicker({
+        Title = "Ally Box Color",
+        Description = "Color for teammate boxes",
+        Default = Colors.Ally,
+        Callback = function(color)
+            Colors.Ally = color
+        end
+    })
+    
+    BoxColorSection:Toggle({
+        Title = "Rainbow Boxes",
+        Description = "Apply rainbow effect to boxes",
+        Default = Settings.RainbowBoxes,
+        Icon = "rainbow",
+        Callback = function(state)
+            Settings.RainbowBoxes = state
+        end
+    })
+    
+    local BoxAdvancedSection = BoxESPTab:Section({
+        Title = "Advanced Options",
+        Icon = "settings",
+        Side = "Right"
+    })
+    
+    BoxAdvancedSection:Toggle({
+        Title = "Auto-Scale",
+        Description = "Automatically scale box thickness with distance",
+        Default = Settings.Box.AutoScale or true,
+        Callback = function(state)
+            if not Settings.Box then Settings.Box = {} end
+            Settings.Box.AutoScale = state
+        end
+    })
+    
+    BoxAdvancedSection:Toggle({
+        Title = "Show Distance",
+        Description = "Show distance to player on box",
+        Default = Settings.ShowDistance,
+        Callback = function(state)
+            Settings.ShowDistance = state
+        end
+    })
+    
+    -- Tracer Tab with comprehensive tracer customization
+    local TracerEnableSection = TracerTab:Section({
+        Title = "Tracer Settings",
+        Icon = "trending-up",
+        Side = "Left"
+    })
+    
+    TracerEnableSection:Toggle({
+        Title = "Enable Tracers",
         Description = "Show lines pointing to players",
         Default = Settings.TracerESP,
-        Side = "Left",
+        Icon = "target",
         Callback = function(state)
             Settings.TracerESP = state
         end
     })
     
-    ESPTab:Dropdown({
+    TracerEnableSection:Dropdown({
         Title = "Tracer Origin",
         Description = "Where tracers start from",
         Default = "Bottom",
-        Side = "Left",
+        Icon = "navigation",
         List = {"Bottom", "Top", "Mouse", "Center"},
         Callback = function(option)
             Settings.TracerOrigin = option
         end
     })
     
-    ESPTab:Toggle({
-        Title = "Health ESP",
-        Description = "Show health bars",
-        Default = Settings.HealthESP,
-        Side = "Right",
-        Callback = function(state)
-            Settings.HealthESP = state
-        end
-    })
-    
-    ESPTab:Dropdown({
-        Title = "Health Style",
-        Description = "Style of health display",
-        Default = "Bar",
-        Side = "Right",
-        List = {"Bar", "Text", "Both"},
+    TracerEnableSection:Dropdown({
+        Title = "Tracer Style",
+        Description = "Visual style of tracer lines",
+        Default = Settings.TracerStyle or "Line",
+        Icon = "minus",
+        List = {"Line", "Dashed", "Dotted"},
         Callback = function(option)
-            Settings.HealthStyle = option
+            Settings.TracerStyle = option
         end
     })
     
-    ESPTab:Toggle({
-        Title = "Snaplines",
-        Description = "Show lines from screen bottom to players",
-        Default = Settings.Snaplines,
-        Side = "Right",
+    local TracerAppearanceSection = TracerTab:Section({
+        Title = "Tracer Appearance",
+        Icon = "edit-2",
+        Side = "Left"
+    })
+    
+    TracerAppearanceSection:Slider({
+        Title = "Tracer Thickness",
+        Description = "Line thickness for tracers",
+        Default = Settings.TracerThickness,
+        Min = 0.5,
+        Max = 5,
+        Decimals = 1,
+        ValueFormat = "%.1fpx",
+        Callback = function(value)
+            Settings.TracerThickness = value
+        end
+    })
+    
+    TracerAppearanceSection:Toggle({
+        Title = "Auto-Scale",
+        Description = "Automatically scale tracer thickness with distance",
+        Default = Settings.Tracer.AutoScale or true,
+        Icon = "zoom-in",
         Callback = function(state)
-            Settings.Snaplines = state
+            if not Settings.Tracer then Settings.Tracer = {} end
+            Settings.Tracer.AutoScale = state
         end
     })
     
-    -- Visuals Tab
-    VisualsTab:Divider({ Text = "Colors", Side = "Left" })
+    TracerAppearanceSection:Slider({
+        Title = "Tracer Transparency",
+        Description = "Transparency of tracer lines",
+        Default = Settings.Tracer.Transparency or 1,
+        Min = 0,
+        Max = 1,
+        Decimals = 2,
+        ValueFormat = "%.2f",
+        Callback = function(value)
+            if not Settings.Tracer then Settings.Tracer = {} end
+            Settings.Tracer.Transparency = value
+        end
+    })
     
-    VisualsTab:ColorPicker({
-        Title = "Enemy Color",
-        Description = "Color for enemy players",
+    local TracerColorSection = TracerTab:Section({
+        Title = "Tracer Colors",
+        Icon = "droplet",
+        Side = "Right"
+    })
+    
+    TracerColorSection:ColorPicker({
+        Title = "Enemy Tracer Color",
+        Description = "Color for enemy player tracers",
         Default = Colors.Enemy,
-        Side = "Left",
         Callback = function(color)
             Colors.Enemy = color
         end
     })
     
-    VisualsTab:ColorPicker({
-        Title = "Ally Color",
-        Description = "Color for team members",
+    TracerColorSection:ColorPicker({
+        Title = "Ally Tracer Color",
+        Description = "Color for teammate tracers",
         Default = Colors.Ally,
-        Side = "Left",
         Callback = function(color)
             Colors.Ally = color
         end
     })
     
-    VisualsTab:ColorPicker({
-        Title = "Health Color",
-        Description = "Color for full health",
-        Default = Colors.Health,
-        Side = "Left",
-        Callback = function(color)
-            Colors.Health = color
-        end
-    })
-    
-    VisualsTab:Divider({ Text = "Effects", Side = "Right" })
-    
-    VisualsTab:Toggle({
-        Title = "Rainbow Effect",
-        Description = "Apply rainbow color effect to ESP",
-        Default = Settings.RainbowEnabled,
-        Side = "Right",
-        Callback = function(state)
-            Settings.RainbowEnabled = state
-        end
-    })
-    
-    VisualsTab:Slider({
-        Title = "Rainbow Speed",
-        Description = "Speed of rainbow color cycling",
-        Default = Settings.RainbowSpeed,
-        Min = 0.1,
-        Max = 5,
-        Decimals = 1,
-        Side = "Right",
-        Callback = function(value)
-            Settings.RainbowSpeed = value
-        end
-    })
-    
-    VisualsTab:Toggle({
-        Title = "Rainbow Boxes",
-        Description = "Apply rainbow effect to boxes",
-        Default = Settings.RainbowBoxes,
-        Side = "Right",
-        Callback = function(state)
-            Settings.RainbowBoxes = state
-        end
-    })
-    
-    VisualsTab:Toggle({
+    TracerColorSection:Toggle({
         Title = "Rainbow Tracers",
         Description = "Apply rainbow effect to tracers",
         Default = Settings.RainbowTracers,
-        Side = "Right",
+        Icon = "rainbow",
         Callback = function(state)
             Settings.RainbowTracers = state
         end
     })
     
-    VisualsTab:Toggle({
-        Title = "Rainbow Text",
-        Description = "Apply rainbow effect to text",
-        Default = Settings.RainbowText,
-        Side = "Right",
+    local SnaplineSection = TracerTab:Section({
+        Title = "Snaplines",
+        Icon = "git-commit",
+        Side = "Right"
+    })
+    
+    SnaplineSection:Toggle({
+        Title = "Enable Snaplines",
+        Description = "Show direct lines from screen bottom to players",
+        Default = Settings.Snaplines,
+        Icon = "arrow-up",
         Callback = function(state)
-            Settings.RainbowText = state
+            Settings.Snaplines = state
         end
     })
     
-    -- Skeleton Tab
-    SkeletonTab:Toggle({
-        Title = "Skeleton ESP",
-        Description = "Show player skeleton",
+    SnaplineSection:Dropdown({
+        Title = "Snapline Style",
+        Description = "Visual style of snaplines",
+        Default = Settings.SnaplineStyle or "Straight",
+        Icon = "minus",
+        List = {"Straight", "Dashed", "Dotted"},
+        Callback = function(option)
+            Settings.SnaplineStyle = option
+        end
+    })
+    
+    SnaplineSection:Slider({
+        Title = "Snapline Thickness",
+        Description = "Line thickness for snaplines",
+        Default = Settings.Snapline.Thickness or 1,
+        Min = 0.5,
+        Max = 5,
+        Decimals = 1,
+        ValueFormat = "%.1fpx",
+        Callback = function(value)
+            if not Settings.Snapline then Settings.Snapline = {} end
+            Settings.Snapline.Thickness = value
+        end
+    })
+    
+    -- Skeleton Tab with bone visualization settings
+    local SkeletonEnableSection = SkeletonTab:Section({
+        Title = "Skeleton Settings",
+        Icon = "activity",
+        Side = "Left"
+    })
+    
+    SkeletonEnableSection:Toggle({
+        Title = "Enable Skeleton ESP",
+        Description = "Show player bone structure",
         Default = Settings.SkeletonESP,
+        Icon = "activity",
         Callback = function(state)
             Settings.SkeletonESP = state
         end
     })
     
-    SkeletonTab:ColorPicker({
+    local SkeletonAppearanceSection = SkeletonTab:Section({
+        Title = "Bone Appearance",
+        Icon = "edit-2",
+        Side = "Left"
+    })
+    
+    SkeletonAppearanceSection:ColorPicker({
         Title = "Skeleton Color",
         Description = "Color for skeleton lines",
         Default = Settings.SkeletonColor,
@@ -1242,13 +1536,14 @@ if bracketSuccess and Bracket then
         end
     })
     
-    SkeletonTab:Slider({
+    SkeletonAppearanceSection:Slider({
         Title = "Line Thickness",
         Description = "Thickness of skeleton lines",
         Default = Settings.SkeletonThickness,
         Min = 0.5,
         Max = 3,
         Decimals = 1,
+        ValueFormat = "%.1fpx",
         Callback = function(value)
             Settings.SkeletonThickness = value
             for _, player in ipairs(Players:GetPlayers()) do
@@ -1262,13 +1557,14 @@ if bracketSuccess and Bracket then
         end
     })
     
-    SkeletonTab:Slider({
+    SkeletonAppearanceSection:Slider({
         Title = "Transparency",
         Description = "Transparency of skeleton lines",
         Default = Settings.SkeletonTransparency,
         Min = 0,
         Max = 1,
         Decimals = 2,
+        ValueFormat = "%.2f",
         Callback = function(value)
             Settings.SkeletonTransparency = value
             for _, player in ipairs(Players:GetPlayers()) do
@@ -1282,17 +1578,102 @@ if bracketSuccess and Bracket then
         end
     })
     
-    -- Chams Tab
-    ChamsTab:Toggle({
+    local SkeletonOptionsSection = SkeletonTab:Section({
+        Title = "Bone Options",
+        Icon = "sliders",
+        Side = "Right"
+    })
+    
+    SkeletonOptionsSection:Toggle({
+        Title = "Show Head Connection",
+        Description = "Display line connecting head to torso",
+        Default = Settings.Skeleton.ShowHead or true,
+        Icon = "user",
+        Callback = function(state)
+            if not Settings.Skeleton then Settings.Skeleton = {} end
+            Settings.Skeleton.ShowHead = state
+        end
+    })
+    
+    SkeletonOptionsSection:Toggle({
+        Title = "Show Arms",
+        Description = "Display arm bones",
+        Default = Settings.Skeleton.ShowArms or true,
+        Icon = "thumbs-up",
+        Callback = function(state)
+            if not Settings.Skeleton then Settings.Skeleton = {} end
+            Settings.Skeleton.ShowArms = state
+        end
+    })
+    
+    SkeletonOptionsSection:Toggle({
+        Title = "Show Legs",
+        Description = "Display leg bones",
+        Default = Settings.Skeleton.ShowLegs or true,
+        Icon = "activity",
+        Callback = function(state)
+            if not Settings.Skeleton then Settings.Skeleton = {} end
+            Settings.Skeleton.ShowLegs = state
+        end
+    })
+    
+    SkeletonOptionsSection:Toggle({
+        Title = "Rainbow Skeleton",
+        Description = "Apply rainbow effect to skeleton",
+        Default = Settings.Skeleton.Rainbow or false,
+        Icon = "rainbow",
+        Callback = function(state)
+            if not Settings.Skeleton then Settings.Skeleton = {} end
+            Settings.Skeleton.Rainbow = state
+        end
+    })
+    
+    -- Chams Tab with highlight customization
+    local ChamsEnableSection = ChamsTab:Section({
+        Title = "Chams Settings",
+        Icon = "layers",
+        Side = "Left"
+    })
+    
+    ChamsEnableSection:Toggle({
         Title = "Enable Chams",
         Description = "Show player highlights through walls",
         Default = Settings.ChamsEnabled,
+        Icon = "eye",
         Callback = function(state)
             Settings.ChamsEnabled = state
         end
     })
     
-    ChamsTab:ColorPicker({
+    ChamsEnableSection:Toggle({
+        Title = "Show Through Walls",
+        Description = "Make players visible through walls",
+        Default = Settings.Chams.ShowThroughWalls or true,
+        Icon = "eye",
+        Callback = function(state)
+            if not Settings.Chams then Settings.Chams = {} end
+            Settings.Chams.ShowThroughWalls = state
+        end
+    })
+    
+    ChamsEnableSection:Toggle({
+        Title = "Use Team Colors",
+        Description = "Apply team colors to chams",
+        Default = Settings.Chams.UseTeamColors or true,
+        Icon = "users",
+        Callback = function(state)
+            if not Settings.Chams then Settings.Chams = {} end
+            Settings.Chams.UseTeamColors = state
+        end
+    })
+    
+    local ChamsColorSection = ChamsTab:Section({
+        Title = "Chams Colors",
+        Icon = "droplet",
+        Side = "Left"
+    })
+    
+    ChamsColorSection:ColorPicker({
         Title = "Fill Color",
         Description = "Color for visible parts",
         Default = Settings.ChamsFillColor,
@@ -1301,7 +1682,7 @@ if bracketSuccess and Bracket then
         end
     })
     
-    ChamsTab:ColorPicker({
+    ChamsColorSection:ColorPicker({
         Title = "Outline Color",
         Description = "Color for character outline",
         Default = Settings.ChamsOutlineColor,
@@ -1310,7 +1691,7 @@ if bracketSuccess and Bracket then
         end
     })
     
-    ChamsTab:ColorPicker({
+    ChamsColorSection:ColorPicker({
         Title = "Occluded Color",
         Description = "Color for parts behind walls",
         Default = Settings.ChamsOccludedColor,
@@ -1319,85 +1700,165 @@ if bracketSuccess and Bracket then
         end
     })
     
-    ChamsTab:Slider({
+    local ChamsAppearanceSection = ChamsTab:Section({
+        Title = "Chams Appearance",
+        Icon = "sliders",
+        Side = "Right"
+    })
+    
+    ChamsAppearanceSection:Slider({
         Title = "Fill Transparency",
         Description = "Transparency of the fill color",
         Default = Settings.ChamsTransparency,
         Min = 0,
         Max = 1,
         Decimals = 2,
+        ValueFormat = "%.2f",
         Callback = function(value)
             Settings.ChamsTransparency = value
         end
     })
     
-    ChamsTab:Slider({
+    ChamsAppearanceSection:Slider({
         Title = "Outline Transparency",
         Description = "Transparency of the outline",
         Default = Settings.ChamsOutlineTransparency,
         Min = 0,
         Max = 1,
         Decimals = 2,
+        ValueFormat = "%.2f",
         Callback = function(value)
             Settings.ChamsOutlineTransparency = value
         end
     })
     
-    ChamsTab:Slider({
+    ChamsAppearanceSection:Slider({
         Title = "Outline Thickness",
         Description = "Thickness of the outline",
         Default = Settings.ChamsOutlineThickness,
         Min = 0,
         Max = 1,
         Decimals = 2,
+        ValueFormat = "%.2f",
         Callback = function(value)
             Settings.ChamsOutlineThickness = value
         end
     })
     
-    -- Settings Tab
-    SettingsTab:Divider({ Text = "Performance", Side = "Left" })
+    ChamsAppearanceSection:Dropdown({
+        Title = "Chams Mode",
+        Description = "Visual style for chams",
+        Default = Settings.Chams.Mode or "AlwaysOnTop",
+        Icon = "layers",
+        List = {"AlwaysOnTop", "Occluded", "Both"},
+        Callback = function(option)
+            if not Settings.Chams then Settings.Chams = {} end
+            Settings.Chams.Mode = option
+        end
+    })
     
-    SettingsTab:Slider({
+    -- Settings Tab with comprehensive configuration options
+    local PerformanceSection = SettingsTab:Section({
+        Title = "Performance Settings",
+        Icon = "cpu",
+        Side = "Left"
+    })
+    
+    PerformanceSection:Slider({
         Title = "Refresh Rate",
-        Description = "ESP update frequency (FPS)",
+        Description = "ESP update frequency",
         Default = 1/Settings.RefreshRate,
         Min = 15,
         Max = 144,
+        ValueFormat = "%d FPS",
+        Icon = "refresh-cw",
         Callback = function(value)
             Settings.RefreshRate = 1/value
         end
     })
     
-    SettingsTab:Toggle({
+    PerformanceSection:Toggle({
         Title = "Visibility Check",
         Description = "Check if players are visible",
         Default = Settings.VisibilityCheck,
-        Side = "Left",
+        Icon = "eye",
         Callback = function(state)
             Settings.VisibilityCheck = state
         end
     })
     
-    SettingsTab:Divider({ Text = "Text Settings", Side = "Right" })
+    PerformanceSection:Toggle({
+        Title = "Batch Rendering",
+        Description = "Optimize ESP updates for better performance",
+        Default = Settings.Performance.BatchRendering or true,
+        Icon = "layers",
+        Callback = function(state)
+            if not Settings.Performance then Settings.Performance = {} end
+            Settings.Performance.BatchRendering = state
+        end
+    })
     
-    SettingsTab:Slider({
+    PerformanceSection:Slider({
+        Title = "Batch Size",
+        Description = "Number of players to update per frame",
+        Default = Settings.Performance.BatchSize or 5,
+        Min = 1,
+        Max = 10,
+        ValueFormat = "%d players",
+        Icon = "users",
+        Callback = function(value)
+            if not Settings.Performance then Settings.Performance = {} end
+            Settings.Performance.BatchSize = value
+        end
+    })
+    
+    local TextSection = SettingsTab:Section({
+        Title = "Text Settings",
+        Icon = "type",
+        Side = "Left"
+    })
+    
+    TextSection:Slider({
         Title = "Text Size",
-        Description = "Size of ESP text",
+        Description = "Size of ESP text elements",
         Default = Settings.TextSize,
         Min = 10,
         Max = 24,
-        Side = "Right",
+        ValueFormat = "%dpx",
+        Icon = "type",
         Callback = function(value)
             Settings.TextSize = value
         end
     })
     
-    SettingsTab:Dropdown({
+    TextSection:Dropdown({
+        Title = "Text Font",
+        Description = "Font for ESP text elements",
+        Default = "SourceSans",
+        Icon = "type",
+        List = {"SourceSans", "SourceSansBold", "Gotham", "GothamBold", "Arial", "ArialBold"},
+        Callback = function(option)
+            if option == "SourceSans" then
+                Settings.TextFont = 0
+            elseif option == "SourceSansBold" then
+                Settings.TextFont = 1
+            elseif option == "Gotham" then
+                Settings.TextFont = 2
+            elseif option == "GothamBold" then
+                Settings.TextFont = 3
+            elseif option == "Arial" then
+                Settings.TextFont = 4
+            elseif option == "ArialBold" then
+                Settings.TextFont = 5
+            end
+        end
+    })
+    
+    TextSection:Dropdown({
         Title = "Health Text Format",
         Description = "Format of health display",
         Default = "Number",
-        Side = "Right",
+        Icon = "heart",
         List = {"Number", "Percentage", "Both"},
         Callback = function(option)
             if option then
@@ -1406,12 +1867,67 @@ if bracketSuccess and Bracket then
         end
     })
     
-    SettingsTab:Divider({ Text = "Controls", Side = "Left" })
+    TextSection:Input({
+        Title = "Health Text Suffix",
+        Description = "Text to display after health value",
+        Default = Settings.HealthTextSuffix or "HP",
+        Placeholder = "HP",
+        Icon = "edit-3",
+        Callback = function(text)
+            Settings.HealthTextSuffix = text
+        end
+    })
     
-    SettingsTab:Button({
+    local DistanceSection = SettingsTab:Section({
+        Title = "Distance Settings",
+        Icon = "map-pin",
+        Side = "Right"
+    })
+    
+    DistanceSection:Toggle({
+        Title = "Show Distance",
+        Description = "Display distance to players",
+        Default = Settings.ShowDistance,
+        Icon = "ruler",
+        Callback = function(state)
+            Settings.ShowDistance = state
+        end
+    })
+    
+    DistanceSection:Dropdown({
+        Title = "Distance Unit",
+        Description = "Unit for distance measurements",
+        Default = Settings.DistanceUnit or "studs",
+        Icon = "ruler",
+        List = {"studs", "m", "ft"},
+        Callback = function(option)
+            Settings.DistanceUnit = option
+        end
+    })
+    
+    DistanceSection:Slider({
+        Title = "Distance Precision",
+        Description = "Number of decimal places for distance",
+        Default = Settings.DistancePrecision or 0,
+        Min = 0,
+        Max = 2,
+        ValueFormat = "%d decimals",
+        Icon = "edit-2",
+        Callback = function(value)
+            Settings.DistancePrecision = value
+        end
+    })
+    
+    local ControlsSection = SettingsTab:Section({
+        Title = "Controls",
+        Icon = "settings",
+        Side = "Right"
+    })
+    
+    ControlsSection:Button({
         Title = "Reset Settings",
         Description = "Reset all ESP settings to default",
-        Side = "Left",
+        Icon = "refresh-cw",
         Callback = function()
             CleanupESP()
             
@@ -1459,7 +1975,18 @@ if bracketSuccess and Bracket then
                 SkeletonESP = false,
                 SkeletonColor = Color3.fromRGB(255, 255, 255),
                 SkeletonThickness = 1.5,
-                SkeletonTransparency = 1
+                SkeletonTransparency = 1,
+                Performance = {
+                    BatchRendering = true,
+                    BatchSize = 5,
+                    DistanceCulling = true,
+                    OcclusionCulling = true
+                },
+                Box = {},
+                Tracer = {},
+                Skeleton = {},
+                Chams = {},
+                Snapline = {}
             }
             
             Notify:Update({
@@ -1469,10 +1996,10 @@ if bracketSuccess and Bracket then
         end
     })
     
-    SettingsTab:Button({
+    ControlsSection:Button({
         Title = "Unload ESP",
         Description = "Completely unload ESP and UI",
-        Side = "Left",
+        Icon = "x-circle",
         Callback = function()
             -- Clean up all ESP objects
             CleanupESP()
@@ -1487,13 +2014,17 @@ if bracketSuccess and Bracket then
         end
     })
     
-    -- DevCopy buttons
-    SettingsTab:Divider({ Text = "DevCopy Tools", Side = "Right" })
+    -- DevCopy Tools Section
+    local DevToolsSection = SettingsTab:Section({
+        Title = "Developer Tools",
+        Icon = "code",
+        Side = "Left"
+    })
     
-    SettingsTab:Button({
+    DevToolsSection:Button({
         Title = "Copy Console Log",
         Description = "Copy developer console logs to clipboard",
-        Side = "Right",
+        Icon = "clipboard",
         Callback = function()
             -- Try to refresh DevCopy
             local refreshSuccess, refreshResult = pcall(function()
@@ -1516,12 +2047,12 @@ if bracketSuccess and Bracket then
         end
     })
     
-    SettingsTab:Button({
+    DevToolsSection:Button({
         Title = "Copy Script Loadstring",
         Description = "Copy loadstring for this ESP script",
-        Side = "Right",
+        Icon = "code",
         Callback = function()
-            local loadstringText = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Scripts/refs/heads/main/Examples/Universal_ESP_Pro_Advanced.lua"))()'            
+            local loadstringText = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Scripts/refs/heads/main/Examples/Universal_ESP_Pro_Advanced.lua"))()'
             
             local copySuccess = pcall(function()
                 if setclipboard then
@@ -1549,10 +2080,54 @@ if bracketSuccess and Bracket then
         end
     })
     
+    DevToolsSection:Button({
+        Title = "Print Settings to Console",
+        Description = "Output current settings to developer console",
+        Icon = "terminal",
+        Callback = function()
+            print("\n=== UNIVERSAL ESP PRO ADVANCED SETTINGS ===")
+            for setting, value in pairs(Settings) do
+                if type(value) ~= "table" then
+                    print(setting .. ": " .. tostring(value))
+                else
+                    print(setting .. ": [Table]")
+                    for subSetting, subValue in pairs(value) do
+                        print("  " .. subSetting .. ": " .. tostring(subValue))
+                    end
+                end
+            end
+            print("=== END OF SETTINGS ===\n")
+            
+            Notify:Update({
+                Title = "Settings Printed",
+                Description = "Current settings output to developer console"
+            })
+        end
+    })
+    
     -- UI Keybinds
     local function toggleUI()
         Window.Enabled = not Window.Enabled
     end
+    
+    -- Keybind configuration
+    local KeybindSection = SettingsTab:Section({
+        Title = "Keybinds",
+        Icon = "key",
+        Side = "Right"
+    })
+    
+    KeybindSection:Label({
+        Title = "Toggle UI",
+        Description = "Press Left Ctrl to show/hide the UI",
+        Icon = "eye"
+    })
+    
+    KeybindSection:Label({
+        Title = "Hide UI",
+        Description = "Press Delete to hide the UI",
+        Icon = "eye-off"
+    })
     
     -- Left Ctrl to toggle UI
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1565,11 +2140,22 @@ if bracketSuccess and Bracket then
         end
     end)
     
-    -- Final notifications
-    print("✅ Universal ESP Pro Advanced UI loaded successfully!")
-    print("⌨️ Press Left Ctrl to toggle UI")
+    -- Final notifications with styled console output
+    print("\n" .. string.rep("=", 40))
+    print("✅ Universal ESP Pro Advanced v2.0")
+    print("📊 Features: Box ESP, Tracers, Skeleton, Chams & more")
+    print("⌨️ Press Left Ctrl to toggle UI | Delete to hide UI")
+    print(string.rep("=", 40) .. "\n")
+    
+    -- Initial UI setup
+    Window:SelectTab(1) -- Select Main tab by default
 else
+    -- Headless mode (no UI)
+    print("\n" .. string.rep("=", 40))
     print("⚠️ Bracket UI not available, running in headless mode")
+    print("📊 ESP features will still work without UI")
+    print("💻 Use _G.UniversalESP API to control ESP programmatically")
+    print(string.rep("=", 40) .. "\n")
 end
 
 -- ===================================
