@@ -687,6 +687,39 @@ local SkeletonESP = {
 -- ===================================
 
 local ESPManager = {
+	cleanupESPObjects = function(player)
+		if State.ESPObjects[player] then
+			for _, objects in pairs(State.ESPObjects[player]) do
+				if type(objects) == "table" then
+					for _, obj in pairs(objects) do
+						if obj and obj.Remove then
+							obj:Remove()
+						end
+					end
+				elseif objects and objects.Remove then
+					objects:Remove()
+				end
+			end
+			State.ESPObjects[player] = nil
+		end
+	end,
+	
+	hideESPObjects = function(player)
+		if State.ESPObjects[player] then
+			for _, objects in pairs(State.ESPObjects[player]) do
+				if type(objects) == "table" then
+					for _, obj in pairs(objects) do
+						if obj and obj.Visible ~= nil then
+							obj.Visible = false
+						end
+					end
+				elseif objects and objects.Visible ~= nil then
+					objects.Visible = false
+				end
+			end
+		end
+	end,
+	
 	createESPObjects = function(player)
 		if not State.drawingAvailable then return end
 		
@@ -749,39 +782,6 @@ local ESPManager = {
 		
 		if objects.skeleton then
 			SkeletonESP.updateSkeleton(player, objects.skeleton)
-		end
-	end,
-	
-	cleanupESPObjects = function(player)
-		if State.ESPObjects[player] then
-			for _, objects in pairs(State.ESPObjects[player]) do
-				if type(objects) == "table" then
-					for _, obj in pairs(objects) do
-						if obj and obj.Remove then
-							obj:Remove()
-						end
-					end
-				elseif objects and objects.Remove then
-					objects:Remove()
-				end
-			end
-			State.ESPObjects[player] = nil
-		end
-	end,
-	
-	hideESPObjects = function(player)
-		if State.ESPObjects[player] then
-			for _, objects in pairs(State.ESPObjects[player]) do
-				if type(objects) == "table" then
-					for _, obj in pairs(objects) do
-						if obj and obj.Visible ~= nil then
-							obj.Visible = false
-						end
-					end
-				elseif objects and objects.Visible ~= nil then
-					objects.Visible = false
-				end
-			end
 		end
 	end
 }
