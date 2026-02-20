@@ -529,8 +529,20 @@ end
 -- ===================================
 
 local espObjects = {}
-local Drawing = rawget(game, "Drawing")
-local drawingAvailable = Drawing and pcall(function() return Drawing.new("Circle") end) and pcall(function() return Drawing.new("Square") end)
+local drawingAvailable = false
+local Drawing = nil
+
+-- Safely detect Drawing service
+pcall(function()
+    -- Try to access Drawing as a global
+    Drawing = Drawing
+    if Drawing then
+        drawingAvailable = pcall(function() 
+            local test = Drawing.new("Circle")
+            test:Remove()
+        end)
+    end
+end)
 
 local function createESP(player)
     if not drawingAvailable or not espEnabled then return end
