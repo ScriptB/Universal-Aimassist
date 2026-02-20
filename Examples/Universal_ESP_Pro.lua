@@ -423,67 +423,43 @@ local function updateArrowESP(player, arrow)
 		
 		-- Only show if player is in front of camera
 		if relativePos.Z > 0 then
-			-- Project to screen space manually for accuracy
+			-- Calculate direction from camera to player in screen space
 			local screenCenter = Camera.ViewportSize / 2
-			local fov = Camera.FieldOfView * math.pi / 180
-			local aspectRatio = screenCenter.X / screenCenter.Y
 			
-			-- Calculate screen coordinates
-			local screenX = screenCenter.X + (relativePos.X / relativePos.Z) * (screenCenter.Y / math.tan(fov/2))
-			local screenY = screenCenter.Y - (relativePos.Y / relativePos.Z) * (screenCenter.Y / math.tan(fov/2))
+			-- Use the relative position for accurate direction calculation
+			local dirX = relativePos.X
+			local dirY = -relativePos.Y  -- Negative because screen Y is inverted
 			
-			-- Check if this is actually off-screen
-			local offScreen = screenX < 0 or screenX > Camera.ViewportSize.X or 
-							 screenY < 0 or screenY > Camera.ViewportSize.Y
+			-- Calculate angle from center to player
+			local angle = math.atan2(dirY, dirX)
 			
-			if offScreen then
-				-- Calculate direction from screen center to projected position
-				local dirX = screenX - screenCenter.X
-				local dirY = screenY - screenCenter.Y
-				local angle = math.atan2(dirY, dirX)
-				
-				-- Find intersection with screen edge
-				local distance = ESPConfig.Arrow.Distance
-				local maxDist = math.min(screenCenter.X, screenCenter.Y) - 30
-				
-				-- Calculate edge intersection
-				local edgeX, edgeY
-				local absCos = math.abs(math.cos(angle))
-				local absSin = math.abs(math.sin(angle))
-				
-				if absCos > absSin then
-					-- Intersect with left or right edge
-					edgeX = math.cos(angle) > 0 and (Camera.ViewportSize.X - 30) or 30
-					edgeY = screenCenter.Y + (edgeX - screenCenter.X) * math.tan(angle)
-				else
-					-- Intersect with top or bottom edge
-					edgeY = math.sin(angle) > 0 and 30 or (Camera.ViewportSize.Y - 30)
-					edgeX = screenCenter.X + (edgeY - screenCenter.Y) / math.tan(angle)
-				end
-				
-				-- Clamp to screen bounds
-				edgeX = math.max(30, math.min(Camera.ViewportSize.X - 30, edgeX))
-				edgeY = math.max(30, math.min(Camera.ViewportSize.Y - 30, edgeY))
-				
-				-- Create rotated triangle pointing toward player
-				local size = ESPConfig.Arrow.Size
-				local cosAngle = math.cos(angle)
-				local sinAngle = math.sin(angle)
-				
-				-- Triangle points (arrow pointing toward player)
-				local tip = Vector2.new(size * cosAngle + edgeX, size * sinAngle + edgeY)
-				local baseLeft = Vector2.new(-size/2 * cosAngle - size/2 * sinAngle + edgeX, 
-											   -size/2 * sinAngle + size/2 * cosAngle + edgeY)
-				local baseRight = Vector2.new(-size/2 * cosAngle + size/2 * sinAngle + edgeX, 
-												-size/2 * sinAngle - size/2 * cosAngle + edgeY)
-				
-				arrow.PointA = tip
-				arrow.PointB = baseLeft
-				arrow.PointC = baseRight
-				arrow.Visible = true
-			else
-				arrow.Visible = false
-			end
+			-- Position arrow around crosshair at fixed distance
+			local distance = ESPConfig.Arrow.Distance
+			local arrowX = screenCenter.X + math.cos(angle) * distance
+			local arrowY = screenCenter.Y + math.sin(angle) * distance
+			
+			-- Clamp to screen bounds (but keep near center)
+			local maxDist = math.min(screenCenter.X, screenCenter.Y) - 50
+			local actualDist = math.min(distance, maxDist)
+			arrowX = screenCenter.X + math.cos(angle) * actualDist
+			arrowY = screenCenter.Y + math.sin(angle) * actualDist
+			
+			-- Create rotated triangle pointing toward player
+			local size = ESPConfig.Arrow.Size
+			local cosAngle = math.cos(angle)
+			local sinAngle = math.sin(angle)
+			
+			-- Triangle points (arrow pointing toward player)
+			local tip = Vector2.new(size * cosAngle + arrowX, size * sinAngle + arrowY)
+			local baseLeft = Vector2.new(-size/2 * cosAngle - size/2 * sinAngle + arrowX, 
+									   -size/2 * sinAngle + size/2 * cosAngle + arrowY)
+			local baseRight = Vector2.new(-size/2 * cosAngle + size/2 * sinAngle + arrowX, 
+										-size/2 * sinAngle - size/2 * cosAngle + arrowY)
+			
+			arrow.PointA = tip
+			arrow.PointB = baseLeft
+			arrow.PointC = baseRight
+			arrow.Visible = true
 		else
 			arrow.Visible = false
 		end
