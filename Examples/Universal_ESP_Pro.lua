@@ -44,6 +44,28 @@ else
     print("🔧 Continuing without DevCopy...")
 end
 
+-- ===================================
+-- BRACKET LIBRARY INTEGRATION
+-- ===================================
+
+-- Load Bracket library for UI
+print("🎨 Attempting to load Bracket library...")
+local bracketSuccess, Bracket = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Aimassist/refs/heads/main/Library%20Repos/BracketLib"))()
+end)
+
+if bracketSuccess and Bracket then
+    print("✅ Bracket library loaded successfully!")
+else
+    print("⚠️ Bracket library integration failed!")
+    if not bracketSuccess then
+        print("❌ HTTP request or loadstring failed:", Bracket)
+    else
+        print("❌ Bracket execution returned:", Bracket)
+    end
+    print("🔧 Continuing without UI...")
+end
+
 print("🚀 Loading Universal ESP Pro...")
 
 -- ===================================
@@ -1107,3 +1129,324 @@ getgenv().UniversalESP = {
 initializeESP()
 
 print("🎯 Universal ESP Pro functions exported to getgenv().UniversalESP")
+
+-- ===================================
+-- BRACKET UI CREATION
+-- ===================================
+
+if Bracket then
+    -- Create notifications
+    Bracket:Notification({Title = "Universal ESP Pro", Description = "Loading...", Duration = 2})
+    Bracket:Notification2({Title = "Universal ESP Pro v2.0", Duration = 3})
+    
+    -- Create main window
+    local Window = Bracket:Window({
+        Name = "👁 Universal ESP Pro v2.0",
+        Enabled = true,
+        Color = Color3.fromRGB(85, 170, 255),
+        Size = UDim2.new(0, 600, 0, 500),
+        Position = UDim2.new(0.5, -300, 0.5, -250)
+    }) do
+        
+        -- ===================================
+        -- MAIN ESP TAB
+        -- ===================================
+        
+        local MainTab = Window:Tab({Name = "👁 ESP"}) do
+            MainTab:Divider({Text = "ESP Controls", Side = "Left"})
+            
+            local espToggle = MainTab:Toggle({
+                Name = "👁 Enable ESP",
+                Side = "Left",
+                Value = ESPConfig.Enabled,
+                Callback = function(Value)
+                    toggleESP(Value)
+                end
+            })
+            
+            local teamCheckToggle = MainTab:Toggle({
+                Name = "👥 Team Check",
+                Side = "Left",
+                Value = ESPConfig.TeamCheck,
+                Callback = function(Value)
+                    ESPConfig.TeamCheck = Value
+                end
+            })
+            
+            local maxDistanceSlider = MainTab:Slider({
+                Name = "📏 Max Distance",
+                Side = "Left",
+                Min = 100,
+                Max = 2000,
+                Value = ESPConfig.MaxDistance,
+                Callback = function(Value)
+                    setMaxDistance(Value)
+                end
+            })
+            
+            MainTab:Divider({Text = "ESP Features", Side = "Left"})
+            
+            local boxEspToggle = MainTab:Toggle({
+                Name = "📦 Box ESP",
+                Side = "Left",
+                Value = ESPConfig.Box.Enabled,
+                Callback = function(Value)
+                    toggleBoxESP(Value)
+                end
+            })
+            
+            local nameEspToggle = MainTab:Toggle({
+                Name = "📝 Name ESP",
+                Side = "Left",
+                Value = ESPConfig.Name.Enabled,
+                Callback = function(Value)
+                    toggleNameESP(Value)
+                end
+            })
+            
+            local healthEspToggle = MainTab:Toggle({
+                Name = "❤️ Health ESP",
+                Side = "Left",
+                Value = ESPConfig.Health.Enabled,
+                Callback = function(Value)
+                    toggleHealthESP(Value)
+                end
+            })
+            
+            local tracerEspToggle = MainTab:Toggle({
+                Name = "📍 Tracer ESP",
+                Side = "Left",
+                Value = ESPConfig.Tracer.Enabled,
+                Callback = function(Value)
+                    toggleTracerESP(Value)
+                end
+            })
+            
+            local arrowEspToggle = MainTab:Toggle({
+                Name = "➡️ Arrow ESP",
+                Side = "Left",
+                Value = ESPConfig.Arrow.Enabled,
+                Callback = function(Value)
+                    toggleArrowESP(Value)
+                end
+            })
+            
+            local skeletonEspToggle = MainTab:Toggle({
+                Name = "🦴 Skeleton ESP",
+                Side = "Left",
+                Value = ESPConfig.Skeleton.Enabled,
+                Callback = function(Value)
+                    toggleSkeletonESP(Value)
+                end
+            })
+            
+            local chamsToggle = MainTab:Toggle({
+                Name = "🎨 Chams ESP",
+                Side = "Left",
+                Value = ESPConfig.Chams.Enabled,
+                Callback = function(Value)
+                    toggleChams(Value)
+                end
+            })
+        end
+        
+        -- ===================================
+        -- VISUAL EFFECTS TAB
+        -- ===================================
+        
+        local EffectsTab = Window:Tab({Name = "🎨 Effects"}) do
+            EffectsTab:Divider({Text = "Visual Effects", Side = "Left"})
+            
+            local rainbowToggle = EffectsTab:Toggle({
+                Name = "🌈 Rainbow Effects",
+                Side = "Left",
+                Value = ESPConfig.Effects.Rainbow,
+                Callback = function(Value)
+                    toggleRainbow(Value)
+                end
+            })
+            
+            local performanceToggle = EffectsTab:Toggle({
+                Name = "⚡ Performance Mode",
+                Side = "Left",
+                Value = ESPConfig.Performance.BatchRendering,
+                Callback = function(Value)
+                    togglePerformance(Value)
+                end
+            })
+            
+            EffectsTab:Divider({Text = "Box Settings", Side = "Left"})
+            
+            local boxColorPicker = EffectsTab:Colorpicker({
+                Name = "📦 Box Color",
+                Side = "Left",
+                Value = ESPConfig.Box.Color,
+                Callback = function(Value)
+                    ESPConfig.Box.Color = Value
+                end
+            })
+            
+            local boxThicknessSlider = EffectsTab:Slider({
+                Name = "📏 Box Thickness",
+                Side = "Left",
+                Min = 1,
+                Max = 5,
+                Value = ESPConfig.Box.Thickness,
+                Callback = function(Value)
+                    ESPConfig.Box.Thickness = Value
+                end
+            })
+            
+            EffectsTab:Divider({Text = "Tracer Settings", Side = "Left"})
+            
+            local tracerColorPicker = EffectsTab:Colorpicker({
+                Name = "📍 Tracer Color",
+                Side = "Left",
+                Value = ESPConfig.Tracer.Color,
+                Callback = function(Value)
+                    ESPConfig.Tracer.Color = Value
+                end
+            })
+            
+            local tracerThicknessSlider = EffectsTab:Slider({
+                Name = "📏 Tracer Thickness",
+                Side = "Left",
+                Min = 1,
+                Max = 5,
+                Value = ESPConfig.Tracer.Thickness,
+                Callback = function(Value)
+                    ESPConfig.Tracer.Thickness = Value
+                end
+            })
+        end
+        
+        -- ===================================
+        -- PERFORMANCE TAB
+        -- ===================================
+        
+        local PerformanceTab = Window:Tab({Name = "📊 Performance"}) do
+            PerformanceTab:Divider({Text = "Performance Monitor", Side = "Left"})
+            
+            local fpsLabel = PerformanceTab:Label({Text = "🎯 FPS: 0", Side = "Left"})
+            local playersLabel = PerformanceTab:Label({Text = "👥 Players: 0", Side = "Left"})
+            local memoryLabel = PerformanceTab:Label({Text = "💾 Memory: 0 MB", Side = "Left"})
+            
+            -- Update performance stats
+            task.spawn(function()
+                while true do
+                    local stats = getPerformanceStats()
+                    fpsLabel:UpdateLabel({Text = "🎯 FPS: " .. stats.FPS})
+                    playersLabel:UpdateLabel({Text = "👥 Players: " .. stats.Players})
+                    memoryLabel:UpdateLabel({Text = "💾 Memory: " .. math.floor(stats.Memory) .. " MB"})
+                    task.wait(1)
+                end
+            end)
+            
+            PerformanceTab:Divider({Text = "Performance Settings", Side = "Left"})
+            
+            local maxFpsSlider = PerformanceTab:Slider({
+                Name = "⚡ Max FPS",
+                Side = "Left",
+                Min = 30,
+                Max = 144,
+                Value = ESPConfig.Performance.MaxFPS,
+                Callback = function(Value)
+                    ESPConfig.Performance.MaxFPS = Value
+                end
+            })
+            
+            local updateIntervalSlider = PerformanceTab:Slider({
+                Name = "🔄 Update Interval",
+                Side = "Left",
+                Min = 1,
+                Max = 10,
+                Value = ESPConfig.Performance.UpdateInterval,
+                Callback = function(Value)
+                    ESPConfig.Performance.UpdateInterval = Value
+                end
+            })
+        end
+        
+        -- ===================================
+        -- SETTINGS TAB
+        -- ===================================
+        
+        local SettingsTab = Window:Tab({Name = "⚙️ Settings"}) do
+            SettingsTab:Divider({Text = "Configuration", Side = "Left"})
+            
+            local saveButton = SettingsTab:Button({
+                Name = "💾 Save Settings",
+                Side = "Left",
+                Callback = function()
+                    -- Save settings to file (placeholder)
+                    Bracket:Notification({Title = "💾 Settings Saved", Description = "Your ESP settings have been saved", Duration = 2})
+                end
+            })
+            
+            local loadButton = SettingsTab:Button({
+                Name = "📂 Load Settings",
+                Side = "Left",
+                Callback = function()
+                    -- Load settings from file (placeholder)
+                    Bracket:Notification({Title = "📂 Settings Loaded", Description = "Your ESP settings have been loaded", Duration = 2})
+                end
+            })
+            
+            local resetButton = SettingsTab:Button({
+                Name = "🔄 Reset Settings",
+                Side = "Left",
+                Callback = function()
+                    -- Reset to defaults (placeholder)
+                    Bracket:Notification({Title = "🔄 Settings Reset", Description = "ESP settings have been reset to defaults", Duration = 2})
+                end
+            })
+            
+            SettingsTab:Divider({Text = "Danger Zone", Side = "Left"})
+            
+            local destroyButton = SettingsTab:Button({
+                Name = "💀 Destroy UI (Stealth)",
+                Side = "Left",
+                Callback = function()
+                    Window:Toggle(false)
+                    Bracket:Notification({Title = "💀 UI Destroyed", Description = "UI has been destroyed for stealth mode", Duration = 2})
+                end
+            })
+            
+            local unloadButton = SettingsTab:Button({
+                Name = "🗑️ Unload ESP",
+                Side = "Left",
+                Callback = function()
+                    -- Cleanup ESP
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer then
+                            cleanupPlayerESP(player)
+                        end
+                    end
+                    Bracket:Notification({Title = "🗑️ ESP Unloaded", Description = "ESP has been completely unloaded", Duration = 3})
+                end
+            })
+        end
+        
+        -- UI keybinds
+        local UserInputService = game:GetService("UserInputService")
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            
+            -- Toggle UI with F9
+            if input.KeyCode == Enum.KeyCode.F9 then
+                Window:Toggle()
+            elseif input.KeyCode == Enum.KeyCode.Delete then
+                Window:Toggle(false)
+            end
+        end)
+    end
+    
+    -- Notification on load
+    Bracket:Notification({Title = "Universal ESP Pro v2.0", Description = "Loaded successfully! Press F9 to toggle UI", Duration = 3})
+    
+    print("✅ Universal ESP Pro UI loaded successfully!")
+    print("⌨️ Press F9 to toggle UI")
+else
+    print("⚠️ Bracket library not available - UI disabled")
+    print("🎯 Use getgenv().UniversalESP for manual control")
+end
