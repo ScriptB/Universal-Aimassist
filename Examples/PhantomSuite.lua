@@ -169,163 +169,286 @@ detectExecutor()
 -- ===================================
 
 local function createMainUI()
-    -- Create Bracket window
-    local Window = Bracket:CreateWindow({
+    -- Create Bracket window using correct API
+    local Window = Bracket:Window({
         Name = "Phantom Suite v7.8 - Bracket UI",
-        Size = UDim2.new(0, 600, 0, 450)
+        Color = Color3.new(0.5, 0.25, 1),
+        Size = UDim2.new(0, 600, 0, 450),
+        Position = UDim2.new(0.5, -300, 0.5, -225)
     })
     
     -- Create tabs
-    local StatusTab = Window:CreateTab("Status")
-    local AimbotTab = Window:CreateTab("Aimbot")
-    local ESPTab = Window:CreateTab("ESP")
-    local ExtrasTab = Window:CreateTab("Extras")
-    local ConfigsTab = Window:CreateTab("Configs")
-    local KeybindsTab = Window:CreateTab("Keybinds")
-    local InfoTab = Window:CreateTab("Info")
+    local StatusTab = Window:Tab({Name = "Status"})
+    local AimbotTab = Window:Tab({Name = "Aimbot"})
+    local ESPTab = Window:Tab({Name = "ESP"})
+    local ExtrasTab = Window:Tab({Name = "Extras"})
+    local ConfigsTab = Window:Tab({Name = "Configs"})
+    local KeybindsTab = Window:Tab({Name = "Keybinds"})
+    local InfoTab = Window:Tab({Name = "Info"})
     
     -- Status Tab
-    local StatusSection = StatusTab:CreateSection("System Status")
-    StatusSection:CreateLabel("Executor: " .. EXECUTOR_NAME)
-    StatusSection:CreateLabel("UI: Bracket Library")
-    StatusSection:CreateLabel("Version: v7.8")
+    StatusTab:Divider({Text = "System Status"})
+    StatusTab:Label({Text = "Executor: " .. EXECUTOR_NAME})
+    StatusTab:Label({Text = "UI: Bracket Library"})
+    StatusTab:Label({Text = "Version: v7.8"})
     
     -- Aimbot Tab
-    local AimbotSection = AimbotTab:CreateSection("Aimbot Settings")
-    AimbotSection:CreateToggle("Enable Aimbot", function(state)
-        aimbotEnabled = state
-        print("Aimbot:", state and "ON" or "OFF")
-    end)
+    AimbotTab:Divider({Text = "Aimbot Settings"})
+    AimbotTab:Toggle({
+        Name = "Enable Aimbot",
+        Value = aimbotEnabled,
+        Callback = function(state)
+            aimbotEnabled = state
+            print("Aimbot:", state and "ON" or "OFF")
+        end
+    })
     
-    AimbotSection:CreateSlider("FOV", 10, 500, function(value)
-        aimFov = value
-    end)
+    AimbotTab:Slider({
+        Name = "FOV",
+        Min = 10,
+        Max = 500,
+        Value = aimFov,
+        Precise = 0,
+        Unit = "",
+        Callback = function(value)
+            aimFov = value
+        end
+    })
     
-    AimbotSection:CreateSlider("Smoothing", 1, 10, function(value)
-        smoothing = value
-    end)
+    AimbotTab:Slider({
+        Name = "Smoothing",
+        Min = 1,
+        Max = 10,
+        Value = smoothing,
+        Precise = 0,
+        Unit = "",
+        Callback = function(value)
+            smoothing = value
+        end
+    })
     
-    AimbotSection:CreateSlider("Prediction", 0, 0.2, function(value)
-        predictionStrength = value
-    end)
+    AimbotTab:Slider({
+        Name = "Prediction",
+        Min = 0,
+        Max = 0.2,
+        Value = predictionStrength,
+        Precise = 3,
+        Unit = "",
+        Callback = function(value)
+            predictionStrength = value
+        end
+    })
     
-    local ChecksSection = AimbotTab:CreateSection("Checks")
-    ChecksSection:CreateToggle("Wall Check", function(state)
-        wallCheck = state
-    end)
+    AimbotTab:Divider({Text = "Checks"})
+    AimbotTab:Toggle({
+        Name = "Wall Check",
+        Value = wallCheck,
+        Callback = function(state)
+            wallCheck = state
+        end
+    })
     
-    ChecksSection:CreateToggle("Team Check", function(state)
-        teamCheck = state
-    end)
+    AimbotTab:Toggle({
+        Name = "Team Check",
+        Value = teamCheck,
+        Callback = function(state)
+            teamCheck = state
+        end
+    })
     
-    ChecksSection:CreateToggle("Health Check", function(state)
-        healthCheck = state
-    end)
+    AimbotTab:Toggle({
+        Name = "Health Check",
+        Value = healthCheck,
+        Callback = function(state)
+            healthCheck = state
+        end
+    })
     
     -- ESP Tab
-    local ESPSection = ESPTab:CreateSection("ESP Settings")
-    ESPSection:CreateToggle("Enable ESP", function(state)
-        espEnabled = state
-        print("ESP:", state and "ON" or "OFF")
-    end)
+    ESPTab:Divider({Text = "ESP Settings"})
+    ESPTab:Toggle({
+        Name = "Enable ESP",
+        Value = espEnabled,
+        Callback = function(state)
+            espEnabled = state
+            print("ESP:", state and "ON" or "OFF")
+        end
+    })
     
-    ESPSection:CreateToggle("Box ESP", function(state)
-        boxEsp = state
-    end)
+    ESPTab:Toggle({
+        Name = "Box ESP",
+        Value = boxEsp,
+        Callback = function(state)
+            boxEsp = state
+        end
+    })
     
-    ESPSection:CreateToggle("Name ESP", function(state)
-        nameEsp = state
-    end)
+    ESPTab:Toggle({
+        Name = "Name ESP",
+        Value = nameEsp,
+        Callback = function(state)
+            nameEsp = state
+        end
+    })
     
-    ESPSection:CreateToggle("Health ESP", function(state)
-        healthEsp = state
-    end)
+    ESPTab:Toggle({
+        Name = "Health ESP",
+        Value = healthEsp,
+        Callback = function(state)
+            healthEsp = state
+        end
+    })
     
-    ESPSection:CreateToggle("Distance ESP", function(state)
-        distanceEsp = state
-    end)
+    ESPTab:Toggle({
+        Name = "Distance ESP",
+        Value = distanceEsp,
+        Callback = function(state)
+            distanceEsp = state
+        end
+    })
     
-    ESPSection:CreateToggle("Tracer ESP", function(state)
-        tracerEsp = state
-    end)
+    ESPTab:Toggle({
+        Name = "Tracer ESP",
+        Value = tracerEsp,
+        Callback = function(state)
+            tracerEsp = state
+        end
+    })
     
-    local VisualSection = ESPTab:CreateSection("Visual Settings")
-    VisualSection:CreateColorpicker("ESP Color", function(color)
-        espColor = color
-    end)
+    ESPTab:Divider({Text = "Visual Settings"})
+    ESPTab:Colorpicker({
+        Name = "ESP Color",
+        Color = espColor,
+        Callback = function(color)
+            espColor = color
+        end
+    })
     
-    VisualSection:CreateColorpicker("FOV Color", function(color)
-        fovColor = color
-    end)
+    ESPTab:Colorpicker({
+        Name = "FOV Color",
+        Color = fovColor,
+        Callback = function(color)
+            fovColor = color
+        end
+    })
     
     -- Extras Tab
-    local ExtrasSection = ExtrasTab:CreateSection("Movement")
-    ExtrasSection:CreateToggle("Fly", function(state)
-        flyEnabled = state
-        print("Fly:", state and "ON" or "OFF")
-    end)
+    ExtrasTab:Divider({Text = "Movement"})
+    ExtrasTab:Toggle({
+        Name = "Fly",
+        Value = flyEnabled,
+        Callback = function(state)
+            flyEnabled = state
+            print("Fly:", state and "ON" or "OFF")
+        end
+    })
     
-    ExtrasSection:CreateToggle("Noclip", function(state)
-        noclipEnabled = state
-        print("Noclip:", state and "ON" or "OFF")
-    end)
+    ExtrasTab:Toggle({
+        Name = "Noclip",
+        Value = noclipEnabled,
+        Callback = function(state)
+            noclipEnabled = state
+            print("Noclip:", state and "ON" or "OFF")
+        end
+    })
     
-    ExtrasSection:CreateToggle("Infinite Jump", function(state)
-        infJumpEnabled = state
-        print("Infinite Jump:", state and "ON" or "OFF")
-    end)
+    ExtrasTab:Toggle({
+        Name = "Infinite Jump",
+        Value = infJumpEnabled,
+        Callback = function(state)
+            infJumpEnabled = state
+            print("Infinite Jump:", state and "ON" or "OFF")
+        end
+    })
     
-    ExtrasSection:CreateSlider("Fly Speed", 10, 200, function(value)
-        flySpeed = value
-    end)
+    ExtrasTab:Slider({
+        Name = "Fly Speed",
+        Min = 10,
+        Max = 200,
+        Value = flySpeed,
+        Precise = 0,
+        Unit = "",
+        Callback = function(value)
+            flySpeed = value
+        end
+    })
     
     -- Configs Tab
-    local ConfigsSection = ConfigsTab:CreateSection("Configuration")
-    ConfigsSection:CreateButton("Save Config", function()
-        print("Configuration saved!")
-    end)
+    ConfigsTab:Divider({Text = "Configuration"})
+    ConfigsTab:Button({
+        Name = "Save Config",
+        Callback = function()
+            print("Configuration saved!")
+        end
+    })
     
-    ConfigsSection:CreateButton("Load Config", function()
-        print("Configuration loaded!")
-    end)
+    ConfigsTab:Button({
+        Name = "Load Config",
+        Callback = function()
+            print("Configuration loaded!")
+        end
+    })
     
-    ConfigsSection:CreateButton("Reset Config", function()
-        print("Configuration reset!")
-    end)
+    ConfigsTab:Button({
+        Name = "Reset Config",
+        Callback = function()
+            print("Configuration reset!")
+        end
+    })
     
     -- Keybinds Tab
-    local KeybindsSection = KeybindsTab:CreateSection("Keybinds")
-    KeybindsSection:CreateKeybind("Toggle Aimbot", Enum.KeyCode.LeftControl, function()
-        aimbotEnabled = not aimbotEnabled
-        print("Aimbot:", aimbotEnabled and "ON" or "OFF")
-    end)
+    KeybindsTab:Divider({Text = "Keybinds"})
+    KeybindsTab:Keybind({
+        Name = "Toggle Aimbot",
+        Key = "LeftControl",
+        Mouse = false,
+        Callback = function(bool, key)
+            aimbotEnabled = not aimbotEnabled
+            print("Aimbot:", aimbotEnabled and "ON" or "OFF")
+        end
+    })
     
-    KeybindsSection:CreateKeybind("Toggle ESP", Enum.KeyCode.LeftShift, function()
-        espEnabled = not espEnabled
-        print("ESP:", espEnabled and "ON" or "OFF")
-    end)
+    KeybindsTab:Keybind({
+        Name = "Toggle ESP",
+        Key = "LeftShift",
+        Mouse = false,
+        Callback = function(bool, key)
+            espEnabled = not espEnabled
+            print("ESP:", espEnabled and "ON" or "OFF")
+        end
+    })
     
-    KeybindsSection:CreateKeybind("Toggle UI", Enum.KeyCode.RightShift, function()
-        Window:Toggle()
-        print("UI Toggled")
-    end)
+    KeybindsTab:Keybind({
+        Name = "Toggle UI",
+        Key = "RightShift",
+        Mouse = false,
+        Callback = function(bool, key)
+            Window:Toggle()
+            print("UI Toggled")
+        end
+    })
     
-    KeybindsSection:CreateKeybind("Blatant Mode", Enum.KeyCode.B, function()
-        blatantEnabled = not blatantEnabled
-        print("Blatant:", blatantEnabled and "ON" or "OFF")
-    end)
+    KeybindsTab:Keybind({
+        Name = "Blatant Mode",
+        Key = "B",
+        Mouse = false,
+        Callback = function(bool, key)
+            blatantEnabled = not blatantEnabled
+            print("Blatant:", blatantEnabled and "ON" or "OFF")
+        end
+    })
     
     -- Info Tab
-    local InfoSection = InfoTab:CreateSection("Information")
-    InfoSection:CreateLabel("Phantom Suite v7.8")
-    InfoSection:CreateLabel("Updated for Bracket Library")
-    InfoSection:CreateLabel("by Asuneteric")
-    InfoSection:CreateLabel("")
-    InfoSection:CreateLabel("Features:")
-    InfoSection:CreateLabel("• Advanced Aimbot")
-    InfoSection:CreateLabel("• Comprehensive ESP")
-    InfoSection:CreateLabel("• Movement Tools")
-    InfoSection:CreateLabel("• Modern UI")
+    InfoTab:Divider({Text = "Information"})
+    InfoTab:Label({Text = "Phantom Suite v7.8"})
+    InfoTab:Label({Text = "Updated for Bracket Library"})
+    InfoTab:Label({Text = "by Asuneteric"})
+    InfoTab:Label({Text = ""})
+    InfoTab:Label({Text = "Features:"})
+    InfoTab:Label({Text = "• Advanced Aimbot"})
+    InfoTab:Label({Text = "• Comprehensive ESP"})
+    InfoTab:Label({Text = "• Movement Tools"})
+    InfoTab:Label({Text = "• Modern UI"})
     
     return Window
 end
