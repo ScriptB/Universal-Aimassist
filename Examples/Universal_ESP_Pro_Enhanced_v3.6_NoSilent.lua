@@ -157,6 +157,11 @@ local AimbotSettings = {
     Keybind      = "RightMouseButton",
 }
 
+-- FOV Recalibration for 3rd person cursor drift
+local lastFOVRecalibration = 0
+local FOV_RECALIBRATION_INTERVAL = 3 -- seconds
+local calibratedMouseCenter = nil
+
 -- ══════════════════════════════════════════
 -- ESP CORE
 -- ══════════════════════════════════════════
@@ -337,8 +342,8 @@ local function GetClosestTarget()
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
     else
-        -- In 3rd person, use the actual mouse cursor location
-        center = mouseLoc
+        -- In 3rd person, use the calibrated mouse center to match FOV circle behavior
+        center = calibratedMouseCenter or mouseLoc
     end
     
     local bestDist = AimbotSettings.FOV
@@ -840,16 +845,32 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle
+    -- FOV circle with recalibration for 3rd person cursor drift
     local mouseLoc = UserInputService:GetMouseLocation()
     local fovCenter
+    local currentTime = tick()
+    
     if AimbotSettings.Mode == "Mouse (1st Person)" then
         -- In 1st person, the mouse is fixed at the center of the screen
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
     else
-        -- In 3rd person, use the actual mouse cursor location
-        fovCenter = mouseLoc
+        -- In 3rd person, use recalibrated mouse center to handle cursor drift
+        if currentTime - lastFOVRecalibration >= FOV_RECALIBRATION_INTERVAL or not calibratedMouseCenter then
+            -- Recalibrate by checking if cursor is close to screen center
+            local guiInset = game:GetService("GuiService"):GetGuiInset()
+            local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
+            local distanceFromCenter = (mouseLoc - screenCenter).Magnitude
+            
+            -- If cursor is reasonably close to center (within 50 pixels), use it as calibration
+            if distanceFromCenter <= 50 or not calibratedMouseCenter then
+                calibratedMouseCenter = mouseLoc
+                lastFOVRecalibration = currentTime
+            end
+        end
+        
+        -- Use calibrated center if available, otherwise fall back to current mouse location
+        fovCenter = calibratedMouseCenter or mouseLoc
     end
 
     if AimbotSettings.ShowFOV and AimbotSettings.Enabled then
