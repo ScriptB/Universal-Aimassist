@@ -455,7 +455,7 @@ GbConfig:AddLabel("File: UniversalESP_Config.json", true)
 
 -- ── UI Settings Tab ────────────────────────
 local GbMenu = Tabs.UI:AddLeftGroupbox("Menu")
-GbMenu:AddButton("Unload", function() Library:Unload() end)
+GbMenu:AddButton({ Text = "Unload", Func = function() Library:Unload() end })
 GbMenu:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
     Default = "End",
     NoUI    = true,
@@ -471,6 +471,7 @@ ThemeManager:SetFolder("UniversalESP")
 SaveManager:SetFolder("UniversalESP")
 ThemeManager:ApplyToTab(Tabs.UI)
 SaveManager:BuildConfigSection(Tabs.UI)
+SaveManager:LoadAutoloadConfig()
 
 -- ══════════════════════════════════════════
 -- ESP RUNTIME
