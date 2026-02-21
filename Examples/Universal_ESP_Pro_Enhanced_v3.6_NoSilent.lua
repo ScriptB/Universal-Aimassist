@@ -409,10 +409,10 @@ local function GetClosestSilentTarget()
         if not char then continue end
 
         local part = char:FindFirstChild(SilentAimSettings.HitPart)
-            or char:FindFirstChild("HumanoidRootPart")
-            or char:FindFirstChild("Torso")
-            or char:FindFirstChild("UpperTorso")
-            or char:FindFirstChild("Head")
+        -- Only fallback to HumanoidRootPart if the selected part doesn't exist
+        if not part then
+            part = char:FindFirstChild("HumanoidRootPart")
+        end
         if not part then continue end
 
         local hum = char:FindFirstChildOfClass("Humanoid")
