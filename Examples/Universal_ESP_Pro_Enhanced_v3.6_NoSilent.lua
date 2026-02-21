@@ -146,11 +146,8 @@ end
 -- ══════════════════════════════════════════
 local SilentAimSettings = {
     Enabled      = false,
-    FOV          = 100,
     HitPart      = "Head",
     TeamCheck    = true,
-    ShowFOV      = true,
-    FOVColor     = Color3.fromRGB(255, 255, 255),
     ShowTargetLine = true,
     TargetLineColor = Color3.fromRGB(0, 255, 0),
     Keybind      = "LeftMouseButton",
@@ -341,7 +338,7 @@ end
 -- Get closest player to cursor within Silent Aim FOV
 local function GetClosestSilentTarget()
     local mouseLoc = UserInputService:GetMouseLocation()
-    local bestDist = SilentAimSettings.FOV
+    local bestDist = AimbotSettings.FOV
     local bestChar = nil
     local bestPart = nil
 
@@ -435,14 +432,6 @@ end)
 -- ══════════════════════════════════════════
 
 local FovCircle = NewDrawing("Circle", {
-    Thickness    = 1,
-    Color        = Color3.fromRGB(255, 255, 255),
-    Transparency = 1,
-    Filled       = false,
-    Visible      = false,
-})
-
-local SilentFovCircle = NewDrawing("Circle", {
     Thickness    = 1,
     Color        = Color3.fromRGB(255, 255, 255),
     Transparency = 1,
@@ -797,15 +786,6 @@ GbSilent:AddToggle("SilentAimEnabled", {
     Tooltip = "Silently redirects bullets to target without moving cursor",
 })
 local DepSilent = GbSilent:AddDependencyBox()
-DepSilent:AddSlider("SilentFOV", {
-    Text     = "FOV Radius",
-    Default  = SilentAimSettings.FOV,
-    Min      = 10,
-    Max      = 500,
-    Rounding = 0,
-    Compact  = true,
-    Tooltip  = "Silent aim field of view radius",
-})
 DepSilent:AddDropdown("SilentHitPart", {
     Values  = { "Head", "HumanoidRootPart", "Torso", "UpperTorso" },
     Default = 1,
@@ -819,19 +799,10 @@ DepSilent:AddToggle("SilentTeamCheck", {
     Default = SilentAimSettings.TeamCheck,
     Tooltip = "Skip teammates for silent aim targeting",
 })
-DepSilent:AddToggle("SilentShowFOV", {
-    Text    = "Show FOV Circle",
-    Default = SilentAimSettings.ShowFOV,
-    Tooltip = "Draw silent aim FOV circle around cursor",
-})
 DepSilent:AddToggle("SilentShowLine", {
     Text    = "Show Target Line",
     Default = SilentAimSettings.ShowTargetLine,
     Tooltip = "Draw green line from cursor to target",
-})
-DepSilent:AddLabel("Color"):AddColorPicker("SilentFOVColor", {
-    Default = SilentAimSettings.FOVColor,
-    Title   = "Silent FOV Color",
 })
 DepSilent:AddLabel("Line Color"):AddColorPicker("SilentLineColor", {
     Default = SilentAimSettings.TargetLineColor,
@@ -971,11 +942,8 @@ Options.RainbowSpeed:OnChanged(function()   Settings.Rainbow.Speed       = Optio
 
 -- Silent Aim event handlers
 Toggles.SilentAimEnabled:OnChanged(function() SilentAimSettings.Enabled = Toggles.SilentAimEnabled.Value end)
-Options.SilentFOV:OnChanged(function() SilentAimSettings.FOV = Options.SilentFOV.Value end)
 Toggles.SilentTeamCheck:OnChanged(function() SilentAimSettings.TeamCheck = Toggles.SilentTeamCheck.Value end)
-Toggles.SilentShowFOV:OnChanged(function() SilentAimSettings.ShowFOV = Toggles.SilentShowFOV.Value end)
 Toggles.SilentShowLine:OnChanged(function() SilentAimSettings.ShowTargetLine = Toggles.SilentShowLine.Value end)
-Options.SilentFOVColor:OnChanged(function() SilentAimSettings.FOVColor = Options.SilentFOVColor.Value end)
 Options.SilentLineColor:OnChanged(function() SilentAimSettings.TargetLineColor = Options.SilentLineColor.Value end)
 
 Options.ESPKeybind:OnClick(function()
@@ -1062,28 +1030,17 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle - directly follows cursor position
+    -- Unified FOV circle - shows for both aimbot and silent aim
     local mouseLoc = UserInputService:GetMouseLocation()
     local fovCenter = mouseLoc
 
-    if AimbotSettings.ShowFOV then
+    if AimbotSettings.ShowFOV and (AimbotSettings.Enabled or SilentAimSettings.Enabled) then
         FovCircle.Position    = fovCenter
         FovCircle.Radius      = AimbotSettings.FOV
         FovCircle.Color       = AimbotSettings.FOVColor
         FovCircle.Visible     = true
     else
         FovCircle.Visible = false
-    end
-
-    -- Silent Aim FOV Circle and Target Detection
-    local mouseLoc = UserInputService:GetMouseLocation()
-    if SilentAimSettings.ShowFOV then
-        SilentFovCircle.Position = mouseLoc
-        SilentFovCircle.Radius = SilentAimSettings.FOV
-        SilentFovCircle.Color = SilentAimSettings.FOVColor
-        SilentFovCircle.Visible = true
-    else
-        SilentFovCircle.Visible = false
     end
     
     -- Update Silent Aim target
