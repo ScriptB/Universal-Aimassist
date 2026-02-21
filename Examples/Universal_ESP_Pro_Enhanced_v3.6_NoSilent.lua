@@ -412,6 +412,9 @@ local function GetClosestSilentTarget()
         -- Only fallback to HumanoidRootPart if the selected part doesn't exist
         if not part then
             part = char:FindFirstChild("HumanoidRootPart")
+            print("Silent Aim Debug: Selected part '" .. SilentAimSettings.HitPart .. "' not found, using HumanoidRootPart fallback")
+        else
+            print("Silent Aim Debug: Successfully targeting selected part: " .. part.Name)
         end
         if not part then continue end
 
