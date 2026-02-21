@@ -142,6 +142,27 @@ local function LoadConfig()
 end
 
 -- ══════════════════════════════════════════
+-- SILENT AIM SETTINGS
+-- ══════════════════════════════════════════
+local SilentAimSettings = {
+    Enabled      = false,
+    FOV          = 100,
+    HitPart      = "Head",
+    TeamCheck    = true,
+    ShowFOV      = true,
+    FOVColor     = Color3.fromRGB(255, 255, 255),
+    ShowTargetLine = true,
+    TargetLineColor = Color3.fromRGB(0, 255, 0),
+    Keybind      = "LeftMouseButton",
+}
+
+-- Silent Aim State
+local SilentAimState = {
+    Target = nil,
+    TargetPart = nil,
+}
+
+-- ══════════════════════════════════════════
 -- AIMBOT SETTINGS
 -- ══════════════════════════════════════════
 local AimbotSettings = {
@@ -309,6 +330,102 @@ local function UpdateESP(e)
 end
 
 -- ══════════════════════════════════════════
+-- SILENT AIM FUNCTIONS
+-- ══════════════════════════════════════════
+
+-- Get closest player to cursor within Silent Aim FOV
+local function GetClosestSilentTarget()
+    local mouseLoc = UserInputService:GetMouseLocation()
+    local bestDist = SilentAimSettings.FOV
+    local bestChar = nil
+    local bestPart = nil
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        if SilentAimSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+        local char = player.Character
+        if not char then continue end
+
+        local part = char:FindFirstChild(SilentAimSettings.HitPart)
+            or char:FindFirstChild("HumanoidRootPart")
+            or char:FindFirstChild("Torso")
+            or char:FindFirstChild("UpperTorso")
+            or char:FindFirstChild("Head")
+        if not part then continue end
+
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+
+        local sv, onScreen = Camera:WorldToViewportPoint(part.Position)
+        if not onScreen then continue end
+
+        local screenPos = Vector2.new(sv.X, sv.Y)
+        local dist = (screenPos - mouseLoc).Magnitude
+        if dist < bestDist then
+            bestDist = dist
+            bestChar = char
+            bestPart = part
+        end
+    end
+    return bestPart, bestChar
+end
+
+-- Check if Silent Aim should be active
+local function canUseSilentAim()
+    return SilentAimSettings.Enabled and SilentAimState.Target and SilentAimState.TargetPart
+end
+
+-- ══════════════════════════════════════════
+-- SILENT AIM HOOKS
+-- ══════════════════════════════════════════
+
+-- Store original functions
+local oldNamecall
+local oldIndex
+
+-- Hook __namecall for RCL and Modern gun systems
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    -- Hook FindPartOnRayWithIgnoreList (RCL guns)
+    if method == "FindPartOnRayWithIgnoreList" and canUseSilentAim() then
+        local ray = args[1]
+        if ray then
+            -- Redirect ray to target
+            local newDirection = (SilentAimState.TargetPart.Position - ray.Origin).Unit * ray.Direction.Magnitude
+            local newRay = Ray.new(ray.Origin, newDirection)
+            args[1] = newRay
+        end
+    end
+    
+    -- Hook Raycast (Modern guns)
+    if method == "Raycast" and self == workspace and canUseSilentAim() then
+        local origin = args[1]
+        local direction = args[2]
+        if origin and direction then
+            -- Redirect direction to target
+            local newDirection = (SilentAimState.TargetPart.Position - origin).Unit * direction.Magnitude
+            args[2] = newDirection
+        end
+    end
+    
+    return oldNamecall(self, unpack(args))
+end)
+
+-- Hook __index for Mouse.Hit/Target (Old guns)
+oldIndex = hookmetamethod(game, "__index", function(self, key)
+    if self:IsA("Mouse") and canUseSilentAim() then
+        if key == "Hit" then
+            return SilentAimState.TargetPart.CFrame
+        elseif key == "Target" then
+            return SilentAimState.TargetPart
+        end
+    end
+    return oldIndex(self, key)
+end)
+
+-- ══════════════════════════════════════════
 -- AIMBOT CORE
 -- ══════════════════════════════════════════
 local UserInputService = game:GetService("UserInputService")
@@ -321,6 +438,21 @@ local FovCircle = NewDrawing("Circle", {
     Visible      = false,
 })
 
+local SilentFovCircle = NewDrawing("Circle", {
+    Thickness    = 1,
+    Color        = Color3.fromRGB(255, 255, 255),
+    Transparency = 1,
+    Filled       = false,
+    Visible      = false,
+})
+
+local TargetLine = NewDrawing("Line", {
+    Thickness    = 1,
+    Color        = Color3.fromRGB(255, 255, 255),
+    Transparency = 1,
+    Visible      = false,
+})
+
 local function getBestBodyPart(char)
     return char:FindFirstChild(AimbotSettings.HitPart)
         or char:FindFirstChild("HumanoidRootPart")
@@ -328,7 +460,6 @@ local function getBestBodyPart(char)
         or char:FindFirstChild("UpperTorso")
         or char:FindFirstChild("Head")
 end
-
 
 -- Function to get camera-compensated crosshair position
 -- Based on forum research: https://devforum.roblox.com/t/unusual-worldtoviewportpoint-behavior/3309800
@@ -654,8 +785,58 @@ DepFOV:AddLabel("Color"):AddColorPicker("FOVColor", {
 })
 DepFOV:SetupDependencies({ { Toggles.ShowFOV, true } })
 
+-- RIGHT: Silent Aim
+local GbSilent = Tabs.Aimbot:AddRightGroupbox("Silent Aim")
+GbSilent:AddToggle("SilentAimEnabled", {
+    Text    = "Silent Aim Enabled",
+    Default = SilentAimSettings.Enabled,
+    Tooltip = "Silently redirects bullets to target without moving cursor",
+})
+local DepSilent = GbSilent:AddDependencyBox()
+DepSilent:AddSlider("SilentFOV", {
+    Text     = "FOV Radius",
+    Default  = SilentAimSettings.FOV,
+    Min      = 10,
+    Max      = 500,
+    Rounding = 0,
+    Compact  = true,
+    Tooltip  = "Silent aim field of view radius",
+})
+DepSilent:AddDropdown("SilentHitPart", {
+    Values  = { "Head", "HumanoidRootPart", "Torso", "UpperTorso" },
+    Default = 1,
+    Text    = "Hit Part",
+    Tooltip = "Which body part silent aim should target",
+}):OnChanged(function(val)
+    SilentAimSettings.HitPart = val
+end)
+DepSilent:AddToggle("SilentTeamCheck", {
+    Text    = "Team Check",
+    Default = SilentAimSettings.TeamCheck,
+    Tooltip = "Skip teammates for silent aim targeting",
+})
+DepSilent:AddToggle("SilentShowFOV", {
+    Text    = "Show FOV Circle",
+    Default = SilentAimSettings.ShowFOV,
+    Tooltip = "Draw silent aim FOV circle around cursor",
+})
+DepSilent:AddToggle("SilentShowLine", {
+    Text    = "Show Target Line",
+    Default = SilentAimSettings.ShowTargetLine,
+    Tooltip = "Draw green line from cursor to target",
+})
+DepSilent:AddLabel("Color"):AddColorPicker("SilentFOVColor", {
+    Default = SilentAimSettings.FOVColor,
+    Title   = "Silent FOV Color",
+})
+DepSilent:AddLabel("Line Color"):AddColorPicker("SilentLineColor", {
+    Default = SilentAimSettings.TargetLineColor,
+    Title   = "Target Line Color",
+})
+DepSilent:SetupDependencies({ { Toggles.SilentAimEnabled, true } })
+
 local GbAimInfo = Tabs.Aimbot:AddRightGroupbox("Info")
-GbAimInfo:AddLabel("Aimbot: hold key to lock\ncamera onto nearest target.", true)
+GbAimInfo:AddLabel("Aimbot: Hold key to lock camera\nSilent Aim: Redirects bullets silently", true)
 
 -- ══════════════════════════════════════════
 -- TAB: VISUALS
@@ -784,6 +965,15 @@ Options.HealthThickness:OnChanged(function() Settings.Health.Thickness   = Optio
 Toggles.RainbowEnabled:OnChanged(function() Settings.Rainbow.Enabled    = Toggles.RainbowEnabled.Value  end)
 Options.RainbowSpeed:OnChanged(function()   Settings.Rainbow.Speed       = Options.RainbowSpeed.Value    end)
 
+-- Silent Aim event handlers
+Toggles.SilentAimEnabled:OnChanged(function() SilentAimSettings.Enabled = Toggles.SilentAimEnabled.Value end)
+Options.SilentFOV:OnChanged(function() SilentAimSettings.FOV = Options.SilentFOV.Value end)
+Toggles.SilentTeamCheck:OnChanged(function() SilentAimSettings.TeamCheck = Toggles.SilentTeamCheck.Value end)
+Toggles.SilentShowFOV:OnChanged(function() SilentAimSettings.ShowFOV = Toggles.SilentShowFOV.Value end)
+Toggles.SilentShowLine:OnChanged(function() SilentAimSettings.ShowTargetLine = Toggles.SilentShowLine.Value end)
+Options.SilentFOVColor:OnChanged(function() SilentAimSettings.FOVColor = Options.SilentFOVColor.Value end)
+Options.SilentLineColor:OnChanged(function() SilentAimSettings.TargetLineColor = Options.SilentLineColor.Value end)
+
 Options.ESPKeybind:OnClick(function()
     Settings.Enabled = Toggles.ESPEnabled.Value
 end)
@@ -879,6 +1069,33 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         FovCircle.Visible     = true
     else
         FovCircle.Visible = false
+    end
+
+    -- Silent Aim FOV Circle and Target Detection
+    local mouseLoc = UserInputService:GetMouseLocation()
+    if SilentAimSettings.ShowFOV then
+        SilentFovCircle.Position = mouseLoc
+        SilentFovCircle.Radius = SilentAimSettings.FOV
+        SilentFovCircle.Color = SilentAimSettings.FOVColor
+        SilentFovCircle.Visible = true
+    else
+        SilentFovCircle.Visible = false
+    end
+    
+    -- Update Silent Aim target
+    local silentTarget, silentChar = GetClosestSilentTarget()
+    SilentAimState.Target = silentChar
+    SilentAimState.TargetPart = silentTarget
+    
+    -- Draw target line
+    if SilentAimSettings.ShowTargetLine and silentTarget then
+        local targetScreenPos = Camera:WorldToViewportPoint(silentTarget.Position)
+        TargetLine.From = mouseLoc
+        TargetLine.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+        TargetLine.Color = SilentAimSettings.TargetLineColor
+        TargetLine.Visible = true
+    else
+        TargetLine.Visible = false
     end
 
     -- Aimbot (camera-based / mouse-based)
