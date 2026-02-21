@@ -1,4 +1,4 @@
--- Universal ESP Pro Enhanced v3.5
+-- Universal ESP Pro Enhanced v3.6
 -- UI: LinoriaLib | Full ESP | Config System
 -- Loadstring: loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Scripts/main/Examples/Universal_ESP_Pro_Enhanced.lua", true))()
 
@@ -140,6 +140,21 @@ local function LoadConfig()
         Notify("No Config Found", "Save a config first.", 4)
     end
 end
+
+-- ══════════════════════════════════════════
+-- AIMBOT SETTINGS
+-- ══════════════════════════════════════════
+local AimbotSettings = {
+    Enabled      = false,
+    SilentAim    = false,
+    FOV          = 150,
+    Smoothness   = 10,
+    HitPart      = "Head",
+    TeamCheck    = true,
+    ShowFOV      = true,
+    FOVColor     = Color3.fromRGB(255, 255, 255),
+    Keybind      = "MouseButton2",
+}
 
 -- ══════════════════════════════════════════
 -- ESP CORE
@@ -293,6 +308,85 @@ local function UpdateESP(e)
 end
 
 -- ══════════════════════════════════════════
+-- AIMBOT CORE
+-- ══════════════════════════════════════════
+local UserInputService = game:GetService("UserInputService")
+
+local FovCircle = NewDrawing("Circle", {
+    Thickness    = 1,
+    Color        = Color3.fromRGB(255, 255, 255),
+    Transparency = 1,
+    Filled       = false,
+    Visible      = false,
+})
+
+local function GetClosestTarget()
+    local center   = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local bestDist = AimbotSettings.FOV
+    local bestChar = nil
+    local bestPart = nil
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        if AimbotSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+        local char = player.Character
+        if not char then continue end
+        local part = char:FindFirstChild(AimbotSettings.HitPart)
+            or char:FindFirstChild("HumanoidRootPart")
+        if not part then continue end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then continue end
+        local sv, onScreen = Camera:WorldToViewportPoint(part.Position)
+        if not onScreen then continue end
+        local screenPos = Vector2.new(sv.X, sv.Y)
+        local dist = (screenPos - center).Magnitude
+        if dist < bestDist then
+            bestDist = dist
+            bestChar = char
+            bestPart = part
+        end
+    end
+    return bestPart, bestChar
+end
+
+-- Silent Aim: hook FindPartOnRayWithWhitelist so bullets redirect to target
+local _origFPORWW = workspace.FindPartOnRayWithWhitelist
+local _origFPOR   = workspace.FindPartOnRay
+local _saActive   = false
+
+local function HookSilentAim()
+    workspace.FindPartOnRayWithWhitelist = function(ws, ray, whitelist, ...)
+        if AimbotSettings.SilentAim and _saActive then
+            local target, _ = GetClosestTarget()
+            if target then
+                local dir    = (target.Position - ray.Origin).Unit
+                local newRay = Ray.new(ray.Origin, dir * ray.Direction.Magnitude)
+                return _origFPORWW(ws, newRay, whitelist, ...)
+            end
+        end
+        return _origFPORWW(ws, ray, whitelist, ...)
+    end
+    workspace.FindPartOnRay = function(ws, ray, ...)
+        if AimbotSettings.SilentAim and _saActive then
+            local target, _ = GetClosestTarget()
+            if target then
+                local dir    = (target.Position - ray.Origin).Unit
+                local newRay = Ray.new(ray.Origin, dir * ray.Direction.Magnitude)
+                return _origFPOR(ws, newRay, ...)
+            end
+        end
+        return _origFPOR(ws, ray, ...)
+    end
+end
+
+local function UnhookSilentAim()
+    workspace.FindPartOnRayWithWhitelist = _origFPORWW
+    workspace.FindPartOnRay              = _origFPOR
+end
+
+HookSilentAim()
+
+-- ══════════════════════════════════════════
 -- BUILD LINORIA UI
 -- ══════════════════════════════════════════
 local Window = Library:CreateWindow({
@@ -305,6 +399,7 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     ESP     = Window:AddTab("ESP"),
+    Aimbot  = Window:AddTab("Aimbot"),
     Visuals = Window:AddTab("Visuals"),
     Config  = Window:AddTab("Config"),
     UI      = Window:AddTab("UI Settings"),
@@ -463,6 +558,91 @@ DepName:AddLabel("Color"):AddColorPicker("NameColor", {
 DepName:SetupDependencies({ { Toggles.NameEnabled, true } })
 
 -- ══════════════════════════════════════════
+-- TAB: AIMBOT
+-- ══════════════════════════════════════════
+
+-- LEFT: Main aimbot controls
+local GbAim = Tabs.Aimbot:AddLeftGroupbox("Aimbot")
+GbAim:AddToggle("AimbotEnabled", {
+    Text    = "Enabled",
+    Default = AimbotSettings.Enabled,
+    Tooltip = "Rotate camera toward nearest target within FOV",
+})
+GbAim:AddLabel("Hold Key"):AddKeyPicker("AimbotKey", {
+    Default = "MouseButton2",
+    Mode    = "Hold",
+    Text    = "Aim",
+    Tooltip = "Hold this key to activate aimbot",
+})
+GbAim:AddDivider()
+local DepAim = GbAim:AddDependencyBox()
+DepAim:AddSlider("AimbotFOV", {
+    Text     = "FOV",
+    Default  = AimbotSettings.FOV,
+    Min      = 10,
+    Max      = 500,
+    Rounding = 0,
+    Compact  = true,
+    Suffix   = "px",
+    Tooltip  = "Screen-space radius in pixels to search for targets",
+})
+DepAim:AddSlider("AimbotSmooth", {
+    Text     = "Smoothness",
+    Default  = AimbotSettings.Smoothness,
+    Min      = 1,
+    Max      = 50,
+    Rounding = 0,
+    Compact  = true,
+    Tooltip  = "Higher = slower/smoother camera movement",
+})
+DepAim:AddDropdown("AimbotHitPart", {
+    Values  = { "Head", "HumanoidRootPart", "Torso", "UpperTorso" },
+    Default = 1,
+    Text    = "Hit Part",
+    Tooltip = "Which body part to aim at",
+})
+DepAim:AddToggle("AimbotTeamCheck", {
+    Text    = "Team Check",
+    Default = AimbotSettings.TeamCheck,
+    Tooltip = "Skip teammates when finding targets",
+})
+DepAim:SetupDependencies({ { Toggles.AimbotEnabled, true } })
+
+-- LEFT: FOV circle
+local GbFOV = Tabs.Aimbot:AddLeftGroupbox("FOV Circle")
+GbFOV:AddToggle("ShowFOV", {
+    Text    = "Show FOV Circle",
+    Default = AimbotSettings.ShowFOV,
+    Tooltip = "Draw a circle showing the aimbot FOV radius",
+})
+local DepFOV = GbFOV:AddDependencyBox()
+DepFOV:AddLabel("Color"):AddColorPicker("FOVColor", {
+    Default = AimbotSettings.FOVColor,
+    Title   = "FOV Circle Color",
+})
+DepFOV:SetupDependencies({ { Toggles.ShowFOV, true } })
+
+-- RIGHT: Silent Aim
+local GbSilent = Tabs.Aimbot:AddRightGroupbox("Silent Aim")
+GbSilent:AddToggle("SilentAim", {
+    Text    = "Enabled",
+    Default = AimbotSettings.SilentAim,
+    Tooltip = "Redirect bullets to target without moving camera — works in third person",
+})
+local DepSilent = GbSilent:AddDependencyBox()
+DepSilent:AddLabel("Silent aim hooks the ray-cast\nused for bullet detection.\nNo camera movement needed.", true)
+DepSilent:AddDivider()
+DepSilent:AddLabel("Works best with:\n- Third person games\n- Firearms with raycast", true)
+DepSilent:SetupDependencies({ { Toggles.SilentAim, true } })
+
+local GbAimInfo = Tabs.Aimbot:AddRightGroupbox("Info")
+GbAimInfo:AddLabel("Aimbot: hold key to lock\ncamera onto nearest target.", true)
+GbAimInfo:AddDivider()
+GbAimInfo:AddLabel("Silent Aim: no key needed.\nJust shoot normally.", true)
+GbAimInfo:AddDivider()
+GbAimInfo:AddLabel("Both can run together.", true)
+
+-- ══════════════════════════════════════════
 -- TAB: VISUALS
 -- ══════════════════════════════════════════
 local GbRainbow = Tabs.Visuals:AddLeftGroupbox("Rainbow")
@@ -593,6 +773,16 @@ Options.ESPKeybind:OnClick(function()
     Settings.Enabled = Toggles.ESPEnabled.Value
 end)
 
+-- Aimbot OnChanged
+Toggles.AimbotEnabled:OnChanged(function()  AimbotSettings.Enabled    = Toggles.AimbotEnabled.Value  end)
+Toggles.SilentAim:OnChanged(function()      AimbotSettings.SilentAim  = Toggles.SilentAim.Value      end)
+Toggles.AimbotTeamCheck:OnChanged(function() AimbotSettings.TeamCheck  = Toggles.AimbotTeamCheck.Value end)
+Toggles.ShowFOV:OnChanged(function()        AimbotSettings.ShowFOV    = Toggles.ShowFOV.Value         end)
+Options.AimbotFOV:OnChanged(function()      AimbotSettings.FOV        = Options.AimbotFOV.Value       end)
+Options.AimbotSmooth:OnChanged(function()   AimbotSettings.Smoothness  = Options.AimbotSmooth.Value    end)
+Options.AimbotHitPart:OnChanged(function()  AimbotSettings.HitPart    = Options.AimbotHitPart.Value   end)
+Options.FOVColor:OnChanged(function()       AimbotSettings.FOVColor   = Options.FOVColor.Value        end)
+
 -- ══════════════════════════════════════════
 -- WATERMARK
 -- ══════════════════════════════════════════
@@ -654,12 +844,36 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         return math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
     end)
     _ping = ok and p or _ping
-    Library:SetWatermark(("Universal ESP v3.5  |  %d fps  |  %dms  |  %d players"):format(
+    Library:SetWatermark(("Universal ESP v3.6  |  %d fps  |  %dms  |  %d players"):format(
         math.floor(_fps), _ping,
         math.max(0, #Players:GetPlayers() - 1)
     ))
     for _, e in pairs(ESPObjects) do
         pcall(UpdateESP, e)
+    end
+
+    -- FOV circle
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    if AimbotSettings.ShowFOV then
+        FovCircle.Position    = center
+        FovCircle.Radius      = AimbotSettings.FOV
+        FovCircle.Color       = AimbotSettings.FOVColor
+        FovCircle.Visible     = true
+    else
+        FovCircle.Visible = false
+    end
+
+    -- Aimbot (camera-based)
+    local aimbotHeld = Options.AimbotKey and Options.AimbotKey:GetKeybindActive()
+    _saActive = aimbotHeld or false
+
+    if AimbotSettings.Enabled and aimbotHeld then
+        local target, _ = GetClosestTarget()
+        if target then
+            local targetCF  = CFrame.new(Camera.CFrame.Position, target.Position)
+            local smooth    = math.clamp(AimbotSettings.Smoothness, 1, 50)
+            Camera.CFrame   = Camera.CFrame:Lerp(targetCF, 1 / smooth)
+        end
     end
 end)
 
@@ -668,6 +882,8 @@ Library:OnUnload(function()
     for player in pairs(ESPObjects) do
         RemoveESP(player)
     end
+    pcall(function() FovCircle:Remove() end)
+    UnhookSilentAim()
     print("[Universal ESP] Unloaded.")
 end)
 
@@ -683,4 +899,4 @@ getgenv().UniversalESP = {
 
 SaveManager:LoadAutoloadConfig()
 Notify("Universal ESP Pro Enhanced", "Loaded! Press End to toggle menu.", 5)
-print("[Universal ESP Pro Enhanced v3.5] Loaded successfully.")
+print("[Universal ESP Pro Enhanced v3.6] Loaded successfully.")
