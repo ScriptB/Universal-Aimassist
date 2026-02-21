@@ -291,9 +291,11 @@ end
 -- BUILD LINORIA UI
 -- ══════════════════════════════════════════
 local Window = Library:CreateWindow({
-    Title    = "Universal ESP Pro Enhanced",
-    Center   = true,
-    AutoShow = true,
+    Title        = "Universal ESP Pro Enhanced",
+    Center       = true,
+    AutoShow     = true,
+    TabPadding   = 8,
+    MenuFadeTime = 0.2,
 })
 
 local Tabs = {
@@ -303,25 +305,36 @@ local Tabs = {
     UI      = Window:AddTab("UI Settings"),
 }
 
--- ── ESP Tab ────────────────────────────────
+-- ══════════════════════════════════════════
+-- TAB: ESP
+-- ══════════════════════════════════════════
+
+-- Left: Master controls
 local GbMaster = Tabs.ESP:AddLeftGroupbox("Master")
 GbMaster:AddToggle("ESPEnabled", {
-    Text     = "ESP Enabled",
-    Default  = Settings.Enabled,
-    Callback = function(v) Settings.Enabled = v end,
+    Text    = "ESP Enabled",
+    Default = Settings.Enabled,
+    Tooltip = "Master toggle — disables all ESP rendering when off",
 })
+GbMaster:AddLabel("ESP Keybind"):AddKeyPicker("ESPKeybind", {
+    Default         = "RightShift",
+    SyncToggleState = true,
+    Mode            = "Toggle",
+    Text            = "Toggle ESP",
+    Tooltip         = "Keybind to toggle ESP on/off",
+})
+GbMaster:AddDivider()
 GbMaster:AddToggle("TeamCheck", {
-    Text     = "Team Check",
-    Default  = Settings.TeamCheck,
-    Tooltip  = "Hide ESP for teammates",
-    Callback = function(v) Settings.TeamCheck = v end,
+    Text    = "Team Check",
+    Default = Settings.TeamCheck,
+    Tooltip = "Hides ESP on players in your own team",
 })
 GbMaster:AddToggle("TeamColor", {
-    Text     = "Team Color",
-    Default  = Settings.TeamColor,
-    Tooltip  = "Use team color for ESP elements",
-    Callback = function(v) Settings.TeamColor = v end,
+    Text    = "Use Team Color",
+    Default = Settings.TeamColor,
+    Tooltip = "Overrides ESP colors with each player's team color",
 })
+GbMaster:AddDivider()
 GbMaster:AddSlider("MaxDist", {
     Text     = "Max Distance",
     Default  = Settings.MaxDist,
@@ -329,137 +342,191 @@ GbMaster:AddSlider("MaxDist", {
     Max      = 5000,
     Rounding = 0,
     Suffix   = " studs",
-    Callback = function(v) Settings.MaxDist = v end,
+    Tooltip  = "Players beyond this distance will not have ESP drawn",
 })
 
-local GbBox = Tabs.ESP:AddRightGroupbox("Box ESP")
-GbBox:AddToggle("BoxEnabled", {
-    Text     = "Box Enabled",
-    Default  = Settings.Box.Enabled,
-    Callback = function(v) Settings.Box.Enabled = v end,
+-- Right: Feature tabbox (Box / Tracer / Name / Health)
+local EspTabbox = Tabs.ESP:AddRightTabbox()
+
+-- Box tab
+local TbBox = EspTabbox:AddTab("Box")
+TbBox:AddToggle("BoxEnabled", {
+    Text    = "Enabled",
+    Default = Settings.Box.Enabled,
+    Tooltip = "Draw a bounding box around players",
 })
-GbBox:AddSlider("BoxThickness", {
+local DepBox = TbBox:AddDependencyBox()
+DepBox:AddSlider("BoxThickness", {
     Text     = "Thickness",
     Default  = Settings.Box.Thickness,
     Min      = 1,
     Max      = 5,
     Rounding = 0,
-    Callback = function(v) Settings.Box.Thickness = v end,
+    Tooltip  = "Line thickness of the box",
 })
-GbBox:AddLabel("Box Color"):AddColorPicker("BoxColor", {
-    Default  = Settings.Box.Color,
-    Callback = function(v) Settings.Box.Color = v end,
+DepBox:AddLabel("Color"):AddColorPicker("BoxColor", {
+    Default = Settings.Box.Color,
+    Title   = "Box ESP Color",
 })
+DepBox:SetupDependencies({ { Toggles.BoxEnabled, true } })
 
-local GbTracer = Tabs.ESP:AddLeftGroupbox("Tracer ESP")
-GbTracer:AddToggle("TracerEnabled", {
-    Text     = "Tracer Enabled",
-    Default  = Settings.Tracer.Enabled,
-    Callback = function(v) Settings.Tracer.Enabled = v end,
+-- Tracer tab
+local TbTracer = EspTabbox:AddTab("Tracer")
+TbTracer:AddToggle("TracerEnabled", {
+    Text    = "Enabled",
+    Default = Settings.Tracer.Enabled,
+    Tooltip = "Draw a line from screen edge to each player",
 })
-GbTracer:AddSlider("TracerThickness", {
+local DepTracer = TbTracer:AddDependencyBox()
+DepTracer:AddSlider("TracerThickness", {
     Text     = "Thickness",
     Default  = Settings.Tracer.Thickness,
     Min      = 1,
     Max      = 5,
     Rounding = 0,
-    Callback = function(v) Settings.Tracer.Thickness = v end,
+    Tooltip  = "Line thickness of the tracer",
 })
-GbTracer:AddLabel("Tracer Color"):AddColorPicker("TracerColor", {
-    Default  = Settings.Tracer.Color,
-    Callback = function(v) Settings.Tracer.Color = v end,
+DepTracer:AddDropdown("TracerOrigin", {
+    Values  = { "Bottom", "Center", "Top" },
+    Default = 1,
+    Text    = "Origin",
+    Tooltip = "Where on screen the tracer line starts from",
 })
-GbTracer:AddDropdown("TracerOrigin", {
-    Values   = { "Bottom", "Center", "Top" },
-    Default  = 1,
-    Text     = "Origin",
-    Callback = function(v) Settings.Tracer.Origin = v end,
+DepTracer:AddLabel("Color"):AddColorPicker("TracerColor", {
+    Default = Settings.Tracer.Color,
+    Title   = "Tracer Color",
 })
+DepTracer:SetupDependencies({ { Toggles.TracerEnabled, true } })
 
-local GbName = Tabs.ESP:AddRightGroupbox("Name ESP")
-GbName:AddToggle("NameEnabled", {
-    Text     = "Name Enabled",
-    Default  = Settings.Name.Enabled,
-    Callback = function(v) Settings.Name.Enabled = v end,
+-- Name tab
+local TbName = EspTabbox:AddTab("Name")
+TbName:AddToggle("NameEnabled", {
+    Text    = "Enabled",
+    Default = Settings.Name.Enabled,
+    Tooltip = "Show player names above their heads",
 })
-GbName:AddToggle("ShowDistance", {
-    Text     = "Show Distance",
-    Default  = Settings.Name.ShowDistance,
-    Callback = function(v) Settings.Name.ShowDistance = v end,
+local DepName = TbName:AddDependencyBox()
+DepName:AddToggle("ShowDistance", {
+    Text    = "Show Distance",
+    Default = Settings.Name.ShowDistance,
+    Tooltip = "Appends distance in studs to the name label",
 })
-GbName:AddToggle("ShowHealthName", {
-    Text     = "Show Health",
-    Default  = Settings.Name.ShowHealth,
-    Callback = function(v) Settings.Name.ShowHealth = v end,
+DepName:AddToggle("ShowHealthName", {
+    Text    = "Show Health",
+    Default = Settings.Name.ShowHealth,
+    Tooltip = "Appends current HP to the name label",
 })
-GbName:AddToggle("NameOutline", {
-    Text     = "Outline",
-    Default  = Settings.Name.Outline,
-    Callback = function(v) Settings.Name.Outline = v end,
+DepName:AddToggle("NameOutline", {
+    Text    = "Outline",
+    Default = Settings.Name.Outline,
+    Tooltip = "Draws a dark outline behind the name text",
 })
-GbName:AddSlider("NameSize", {
-    Text     = "Size",
+DepName:AddSlider("NameSize", {
+    Text     = "Font Size",
     Default  = Settings.Name.Size,
     Min      = 10,
     Max      = 24,
     Rounding = 0,
-    Callback = function(v) Settings.Name.Size = v end,
+    Tooltip  = "Size of the name label text",
 })
-GbName:AddLabel("Name Color"):AddColorPicker("NameColor", {
-    Default  = Settings.Name.Color,
-    Callback = function(v) Settings.Name.Color = v end,
+DepName:AddLabel("Color"):AddColorPicker("NameColor", {
+    Default = Settings.Name.Color,
+    Title   = "Name Label Color",
 })
+DepName:SetupDependencies({ { Toggles.NameEnabled, true } })
 
-local GbHealth = Tabs.ESP:AddLeftGroupbox("Health Bar")
-GbHealth:AddToggle("HealthEnabled", {
-    Text     = "Health Bar Enabled",
-    Default  = Settings.Health.Enabled,
-    Callback = function(v) Settings.Health.Enabled = v end,
+-- Health tab
+local TbHealth = EspTabbox:AddTab("Health")
+TbHealth:AddToggle("HealthEnabled", {
+    Text    = "Enabled",
+    Default = Settings.Health.Enabled,
+    Tooltip = "Show a health bar beside each player",
 })
-GbHealth:AddToggle("HealthText", {
-    Text     = "Health Text",
-    Default  = Settings.Health.ShowText,
-    Callback = function(v) Settings.Health.ShowText = v end,
+local DepHealth = TbHealth:AddDependencyBox()
+DepHealth:AddToggle("HealthText", {
+    Text    = "Show HP Text",
+    Default = Settings.Health.ShowText,
+    Tooltip = "Displays the numeric HP value above the health bar",
 })
-GbHealth:AddSlider("HealthThickness", {
-    Text     = "Thickness",
+DepHealth:AddSlider("HealthThickness", {
+    Text     = "Bar Thickness",
     Default  = Settings.Health.Thickness,
     Min      = 1,
     Max      = 6,
     Rounding = 0,
-    Callback = function(v) Settings.Health.Thickness = v end,
+    Tooltip  = "Thickness of the health bar line",
 })
+DepHealth:SetupDependencies({ { Toggles.HealthEnabled, true } })
 
--- ── Visuals Tab ────────────────────────────
-local GbRainbow = Tabs.Visuals:AddLeftGroupbox("Rainbow")
+-- ══════════════════════════════════════════
+-- TAB: VISUALS
+-- ══════════════════════════════════════════
+local GbRainbow = Tabs.Visuals:AddLeftGroupbox("Rainbow Mode")
 GbRainbow:AddToggle("RainbowEnabled", {
-    Text     = "Rainbow Mode",
-    Default  = Settings.Rainbow.Enabled,
-    Tooltip  = "Cycles all ESP colors through rainbow",
-    Callback = function(v) Settings.Rainbow.Enabled = v end,
+    Text    = "Rainbow Enabled",
+    Default = Settings.Rainbow.Enabled,
+    Tooltip = "Cycles all ESP element colors through the full color spectrum",
 })
-GbRainbow:AddSlider("RainbowSpeed", {
-    Text     = "Speed",
+local DepRainbow = GbRainbow:AddDependencyBox()
+DepRainbow:AddSlider("RainbowSpeed", {
+    Text     = "Cycle Speed",
     Default  = Settings.Rainbow.Speed,
     Min      = 1,
-    Max      = 10,
+    Max      = 20,
     Rounding = 0,
-    Callback = function(v) Settings.Rainbow.Speed = v end,
+    Suffix   = "x",
+    Tooltip  = "How fast the rainbow cycles",
 })
+DepRainbow:SetupDependencies({ { Toggles.RainbowEnabled, true } })
 
--- ── Config Tab ─────────────────────────────
-local GbConfig = Tabs.Config:AddLeftGroupbox("Configuration")
-GbConfig:AddButton({ Text = "Save Config", Func = SaveConfig })
-GbConfig:AddButton({ Text = "Load Config", Func = LoadConfig })
+local GbVisInfo = Tabs.Visuals:AddRightGroupbox("Info")
+GbVisInfo:AddLabel("Rainbow overrides all custom\nESP colors when enabled.", true)
+GbVisInfo:AddDivider()
+GbVisInfo:AddLabel("Team Color overrides custom\ncolors per-player when enabled.", true)
+
+-- ══════════════════════════════════════════
+-- TAB: CONFIG
+-- ══════════════════════════════════════════
+local GbConfig = Tabs.Config:AddLeftGroupbox("Manual Config")
+GbConfig:AddButton({
+    Text    = "Save Config",
+    Func    = SaveConfig,
+    Tooltip = "Saves current ESP settings to UniversalESP_Config.json",
+})
+GbConfig:AddButton({
+    Text    = "Load Config",
+    Func    = LoadConfig,
+    Tooltip = "Loads ESP settings from UniversalESP_Config.json",
+})
+GbConfig:AddDivider()
 GbConfig:AddLabel("File: UniversalESP_Config.json", true)
 
--- ── UI Settings Tab ────────────────────────
+local GbScriptInfo = Tabs.Config:AddRightGroupbox("Script Info")
+GbScriptInfo:AddLabel("Universal ESP Pro Enhanced", true)
+GbScriptInfo:AddLabel("Version: v3.4", true)
+GbScriptInfo:AddLabel("UI: LinoriaLib", true)
+GbScriptInfo:AddDivider()
+GbScriptInfo:AddLabel("See script header for\nGitHub raw loadstring.", true)
+
+-- ══════════════════════════════════════════
+-- TAB: UI SETTINGS
+-- ══════════════════════════════════════════
 local GbMenu = Tabs.UI:AddLeftGroupbox("Menu")
-GbMenu:AddButton({ Text = "Unload", Func = function() Library:Unload() end })
-GbMenu:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+GbMenu:AddButton({
+    Text    = "Unload Script",
+    Func    = function()
+        Library:Notify("Unloading Universal ESP...", 2)
+        task.wait(0.5)
+        Library:Unload()
+    end,
+    Tooltip = "Removes all ESP and destroys the UI",
+})
+GbMenu:AddDivider()
+GbMenu:AddLabel("Menu Keybind"):AddKeyPicker("MenuKeybind", {
     Default = "End",
     NoUI    = true,
-    Text    = "Menu keybind",
+    Text    = "Toggle Menu",
+    Tooltip = "Press this key to show/hide the menu",
 })
 Library.ToggleKeybind = Options.MenuKeybind
 
@@ -471,7 +538,51 @@ ThemeManager:SetFolder("UniversalESP")
 SaveManager:SetFolder("UniversalESP")
 ThemeManager:ApplyToTab(Tabs.UI)
 SaveManager:BuildConfigSection(Tabs.UI)
-SaveManager:LoadAutoloadConfig()
+
+-- ══════════════════════════════════════════
+-- ONCHANGED CALLBACKS (decoupled from UI)
+-- ══════════════════════════════════════════
+Toggles.ESPEnabled:OnChanged(function()    Settings.Enabled          = Toggles.ESPEnabled.Value    end)
+Toggles.TeamCheck:OnChanged(function()     Settings.TeamCheck         = Toggles.TeamCheck.Value     end)
+Toggles.TeamColor:OnChanged(function()     Settings.TeamColor         = Toggles.TeamColor.Value     end)
+Options.MaxDist:OnChanged(function()       Settings.MaxDist           = Options.MaxDist.Value       end)
+
+Toggles.BoxEnabled:OnChanged(function()    Settings.Box.Enabled       = Toggles.BoxEnabled.Value    end)
+Options.BoxThickness:OnChanged(function()  Settings.Box.Thickness      = Options.BoxThickness.Value  end)
+Options.BoxColor:OnChanged(function()      Settings.Box.Color          = Options.BoxColor.Value      end)
+
+Toggles.TracerEnabled:OnChanged(function()   Settings.Tracer.Enabled   = Toggles.TracerEnabled.Value   end)
+Options.TracerThickness:OnChanged(function() Settings.Tracer.Thickness  = Options.TracerThickness.Value end)
+Options.TracerOrigin:OnChanged(function()    Settings.Tracer.Origin     = Options.TracerOrigin.Value    end)
+Options.TracerColor:OnChanged(function()     Settings.Tracer.Color      = Options.TracerColor.Value     end)
+
+Toggles.NameEnabled:OnChanged(function()    Settings.Name.Enabled      = Toggles.NameEnabled.Value    end)
+Toggles.ShowDistance:OnChanged(function()   Settings.Name.ShowDistance  = Toggles.ShowDistance.Value   end)
+Toggles.ShowHealthName:OnChanged(function() Settings.Name.ShowHealth    = Toggles.ShowHealthName.Value  end)
+Toggles.NameOutline:OnChanged(function()    Settings.Name.Outline       = Toggles.NameOutline.Value     end)
+Options.NameSize:OnChanged(function()       Settings.Name.Size          = Options.NameSize.Value        end)
+Options.NameColor:OnChanged(function()      Settings.Name.Color         = Options.NameColor.Value       end)
+
+Toggles.HealthEnabled:OnChanged(function()   Settings.Health.Enabled    = Toggles.HealthEnabled.Value   end)
+Toggles.HealthText:OnChanged(function()      Settings.Health.ShowText    = Toggles.HealthText.Value      end)
+Options.HealthThickness:OnChanged(function() Settings.Health.Thickness   = Options.HealthThickness.Value end)
+
+Toggles.RainbowEnabled:OnChanged(function() Settings.Rainbow.Enabled    = Toggles.RainbowEnabled.Value  end)
+Options.RainbowSpeed:OnChanged(function()   Settings.Rainbow.Speed       = Options.RainbowSpeed.Value    end)
+
+Options.ESPKeybind:OnClick(function()
+    Settings.Enabled = Toggles.ESPEnabled.Value
+end)
+
+-- ══════════════════════════════════════════
+-- WATERMARK
+-- ══════════════════════════════════════════
+Library:SetWatermarkVisibility(true)
+Library.KeybindFrame.Visible = true
+
+local _frameTimer   = tick()
+local _frameCounter = 0
+local _fps          = 60
 
 -- ══════════════════════════════════════════
 -- ESP RUNTIME
@@ -492,10 +603,28 @@ for _, player in ipairs(Players:GetPlayers()) do
     end
 end
 
-RunService.RenderStepped:Connect(function()
+local _wmConn = RunService.RenderStepped:Connect(function()
+    _frameCounter += 1
+    if (tick() - _frameTimer) >= 1 then
+        _fps          = _frameCounter
+        _frameTimer   = tick()
+        _frameCounter = 0
+    end
+    Library:SetWatermark(("Universal ESP  |  %d fps  |  %d players"):format(
+        math.floor(_fps),
+        math.max(0, #Players:GetPlayers() - 1)
+    ))
     for _, e in pairs(ESPObjects) do
         pcall(UpdateESP, e)
     end
+end)
+
+Library:OnUnload(function()
+    _wmConn:Disconnect()
+    for player in pairs(ESPObjects) do
+        RemoveESP(player)
+    end
+    print("[Universal ESP] Unloaded.")
 end)
 
 -- ══════════════════════════════════════════
@@ -505,12 +634,9 @@ getgenv().UniversalESP = {
     Settings   = Settings,
     SaveConfig = SaveConfig,
     LoadConfig = LoadConfig,
-    Destroy    = function()
-        for player in pairs(ESPObjects) do
-            RemoveESP(player)
-        end
-        Library:Unload()
-    end,
+    Destroy    = function() Library:Unload() end,
 }
 
-print("[Universal ESP Pro Enhanced v3.3] Loaded successfully.")
+SaveManager:LoadAutoloadConfig()
+Library:Notify("Universal ESP Pro Enhanced loaded!\nPress End to toggle menu.", 5)
+print("[Universal ESP Pro Enhanced v3.4] Loaded successfully.")
