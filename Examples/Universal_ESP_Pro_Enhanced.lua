@@ -732,351 +732,166 @@ local _mouseVelocity = Vector2.new(0, 0)
 local _targetMousePos = Vector2.new(0, 0)
 
 local function isTriggerHeld()
-    local key = AimbotSettings.TriggerKey
-    if not key then return false end
+    if not AimbotSettings.Enabled then return false end
+    if AimbotSettings.AlwaysActive then return true end
     
-    if key == Enum.UserInputType.MouseButton1 or 
-       key == Enum.UserInputType.MouseButton2 or 
-       key == Enum.UserInputType.MouseButton3 then
-        return UserInputService:IsMouseButtonPressed(key)
+    local tk = AimbotSettings.TriggerKey
+    if not tk then return false end
+    
+    -- Mouse buttons
+    if tk == Enum.UserInputType.MouseButton1 or tk == Enum.UserInputType.MouseButton2 or tk == Enum.UserInputType.MouseButton3 then
+        return UserInputService:IsMouseButtonPressed(tk)
     end
     
-    if typeof(key) == "EnumItem" and key.EnumType == Enum.KeyCode then
-        return UserInputService:IsKeyDown(key)
+    -- Keyboard keys
+    if typeof(tk) == "EnumItem" and tk.EnumType == Enum.KeyCode then
+        return UserInputService:IsKeyDown(tk)
     end
     
     return false
 end
 
-local function thirdPersonAimbot(targetPos)
-    if not targetPos then return end
-    
-    -- Always use current camera
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-    
-    local screenPos, onScreen = cam:WorldToViewportPoint(targetPos)
-    if not onScreen then return end
-    
-    -- Align Target with Screen Center (Crosshair)
-    local center = cam.ViewportSize / 2
-    local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
-    
-    -- Calculate distance from center
-    local delta = targetScreenPos - center
-    local distance = delta.Magnitude
-    
-    if distance <= AimbotSettings.ThirdPerson.Deadzone then
-        return
-    end
-    
-    -- Calculate move amount based on smoothness and sensitivity
-    local sensitivityFactor = 1 - AimbotSettings.ThirdPerson.Smoothness
-    local divider = AimbotSettings.ThirdPerson.Sensitivity
-    if divider < 0.1 then divider = 0.1 end
-    
-    -- Clamp sensitivityFactor to avoid getting stuck
-    if sensitivityFactor < 0.05 then sensitivityFactor = 0.05 end
-    if sensitivityFactor > 1 then sensitivityFactor = 1 end
-    
-    -- Special case for 0 smoothness (Instant)
-    if AimbotSettings.ThirdPerson.Smoothness <= 0.01 then
-        sensitivityFactor = 1
-    end
-    
-    local move = (delta / divider) * sensitivityFactor
-    
-    -- Apply movement based on method
-    if AimbotSettings.RotationMethod == "Mouse" then
-        if type(mousemoverel) == "function" then
-            mousemoverel(move.X, move.Y)
-        elseif type(mousemove) == "function" then
-            mousemove(move.X, move.Y)
-        else
-            -- Auto-fallback to CFrame if no mouse function
-            local rotSpeed = 1.0
-            if sensitivityFactor > 0 then rotSpeed = 1.0 / sensitivityFactor end
-            local yaw = math.rad(-move.X * rotSpeed * 0.5) 
-            local pitch = math.rad(-move.Y * rotSpeed * 0.5)
-            cam.CFrame = cam.CFrame * CFrame.Angles(pitch, yaw, 0)
-        end
-    else
-        -- Forced CFrame Rotation (More reliable for Third Person)
-        -- Use simple 3D LookAt with Lerp for robust tracking
-        local currentCF = cam.CFrame
-        local targetCF = CFrame.new(currentCF.Position, targetPos) -- Replaced CFrame.lookAt with CFrame.new for compatibility
-        
-        -- Apply smoothing
-        -- sensitivityFactor is calculated above (1 = instant, lower = smoother)
-        -- We map it to a reasonable Lerp alpha
-        local lerpAlpha = sensitivityFactor
-        
-        -- Clamp for stability
-        if lerpAlpha < 0.01 then lerpAlpha = 0.01 end
-        if lerpAlpha > 1 then lerpAlpha = 1 end
-        
-        cam.CFrame = currentCF:Lerp(targetCF, lerpAlpha)
-    end
-    
-    -- Debug movement (throttled)
-    if tick() % 0.5 < 0.05 then
-        print(string.format("[DEBUG] Moving mouse: %.1f, %.1f | Dist: %.1f", move.X, move.Y, distance))
-    end
-end
-
--- Remove misplaced SafeAimbotUpdate function
--- (It was defined here before _aimbotUpdate was defined, causing nil value errors)
-
+-- Completely rewritten, clean Aimbot Loop
 local function _aimbotUpdate()
-    -- Safety Check: Ensure core globals exist
     if not workspace or not workspace.CurrentCamera or not UserInputService then return end
-    
     local cam = workspace.CurrentCamera
-    -- Ensure Settings exist
-    if not AimbotSettings or not AimbotSettings.FOV then return end
     
-        local mousePos = Vector2.new(0, 0)
-    pcall(function() 
-        if UserInputService then mousePos = UserInputService:GetMouseLocation() end 
-    end)
-    
-    -- Self-contained logger to prevent upvalue errors
-    local function LogError(msg, err)
-        pcall(warn, "[Aimbot]", msg, err)
-    end
-
-    -- Step 1: Targeting
-    local lastDebugReason = "Idle"
-    if AimbotSettings.Enabled then
-        local s, r = pcall(_aimbotGetClosest)
-        if s and r then lastDebugReason = r end
-    end
-    
-    -- Step 2: Visuals
-    pcall(function()
-        if not AimbotSettings.FOV.Enabled or not AimbotSettings.Enabled then
-            if FOVCircle then FOVCircle.Visible = false end
-            if FOVCircleOutline then FOVCircleOutline.Visible = false end
-            if StatusText then StatusText.Visible = false end
-            if LockLine then LockLine.Visible = false end
-            return
-        end
-
-        local fovColor = Color3.new(1, 1, 1)
-        if AimbotSettings.FOV.Rainbow and _aimbotGetRainbow then
+    -- Handle FOV Visuals
+    if AimbotSettings.FOV.Enabled and AimbotSettings.Enabled and AimbotSettings.FOV.Visible then
+        local fovColor = AimbotSettings.FOV.Color or Color3.new(0, 1, 0)
+        if AimbotSettings.FOV.Rainbow and type(_aimbotGetRainbow) == "function" then
             fovColor = _aimbotGetRainbow()
         elseif _aimbotLocked then
             fovColor = AimbotSettings.FOV.LockedColor or Color3.new(1, 0, 0)
-        else
-            fovColor = AimbotSettings.FOV.Color or Color3.new(0, 1, 0)
         end
         
-        local circlePos = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-        
-        if FOVCircle then
-            FOVCircle.Position = circlePos
-            FOVCircleOutline.Position = circlePos
-            FOVCircle.Visible = AimbotSettings.FOV.Visible
-            FOVCircleOutline.Visible = AimbotSettings.FOV.Visible
+        local centerPos = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+        if FOVCircle and FOVCircleOutline then
+            FOVCircle.Position = centerPos
+            FOVCircleOutline.Position = centerPos
             FOVCircle.Radius = AimbotSettings.FOV.Radius or 100
             FOVCircleOutline.Radius = AimbotSettings.FOV.Radius or 100
             FOVCircle.Thickness = AimbotSettings.FOV.Thickness or 1
             FOVCircleOutline.Thickness = (AimbotSettings.FOV.Thickness or 1) + 2
             FOVCircle.Color = fovColor
             FOVCircleOutline.Color = AimbotSettings.FOV.OutlineColor or Color3.new(0, 0, 0)
+            
+            FOVCircle.Visible = true
+            FOVCircleOutline.Visible = true
+        end
+    else
+        if FOVCircle then FOVCircle.Visible = false end
+        if FOVCircleOutline then FOVCircleOutline.Visible = false end
+    end
+    
+    -- Clean UI elements if aimbot is off
+    if not AimbotSettings.Enabled then
+        if LockLine then LockLine.Visible = false end
+        if StatusText then StatusText.Visible = false end
+        _aimbotCancelLock()
+        return
+    end
+
+    -- Run Targeting Logic
+    local debugStatus = _aimbotGetClosest()
+    
+    -- Status Text Update
+    if StatusText then
+        StatusText.Visible = AimbotSettings.FOV.Visible
+        local centerPos = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+        StatusText.Position = Vector2.new(centerPos.X, centerPos.Y + (AimbotSettings.FOV.Radius or 100) + 20)
+        
+        if _aimbotLocked and currentTarget then
+            local isFiring = isTriggerHeld()
+            StatusText.Text = (isFiring and "LOCKED: " or "FOUND: ") .. tostring(currentTarget.Name)
+            StatusText.Color = isFiring and Color3.new(0, 1, 0) or Color3.new(1, 1, 0)
+        else
+            StatusText.Text = "SCAN: " .. tostring(debugStatus)
+            StatusText.Color = Color3.new(1, 1, 1)
+        end
+    end
+    
+    -- Handle Movement
+    if _aimbotLocked and currentTarget and isTriggerHeld() then
+        local char = currentTarget.Character
+        if not char then _aimbotCancelLock() return end
+        
+        local targetPart = getBestBodyPart(char)
+        if not targetPart then _aimbotCancelLock() return end
+        
+        -- Prediction Logic
+        local targetPos = targetPart.Position
+        if AimbotSettings.Prediction > 0 then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                targetPos = targetPos + (hrp.AssemblyLinearVelocity * AimbotSettings.Prediction)
+            end
         end
         
+        -- Lock Line Visual
         if LockLine then
-            LockLine.Visible = false
-            if _aimbotLocked and currentTarget and AimbotSettings.Enabled then
-                local char = currentTarget.Character
-                if char and getBestBodyPart then
-                    local part = getBestBodyPart(char)
-                    if part then
-                        local screenPos, onScreen = cam:WorldToViewportPoint(part.Position)
-                        if onScreen then
-                            LockLine.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-                            LockLine.To = Vector2.new(screenPos.X, screenPos.Y)
-                            LockLine.Visible = true
-                            LockLine.Color = _aimbotRunning and Color3.new(1, 0, 0) or Color3.new(1, 1, 0)
-                        end
+            local screenPos, onScreen = cam:WorldToViewportPoint(targetPos)
+            if onScreen then
+                LockLine.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+                LockLine.To = Vector2.new(screenPos.X, screenPos.Y)
+                LockLine.Color = Color3.new(1, 0, 0)
+                LockLine.Visible = AimbotSettings.FOV.Visible
+            else
+                LockLine.Visible = false
+            end
+        end
+        
+        -- Camera / Mouse Execution
+        if AimbotSettings.LockMode == 1 then
+            -- CFrame (Silent/Direct)
+            local targetCFrame = CFrame.new(cam.CFrame.Position, targetPos)
+            if AimbotSettings.Sensitivity > 0 then
+                cam.CFrame = cam.CFrame:Lerp(targetCFrame, AimbotSettings.Sensitivity)
+            else
+                cam.CFrame = targetCFrame
+            end
+        elseif AimbotSettings.LockMode == 2 then
+            -- MouseMove
+            local screenPos, onScreen = cam:WorldToViewportPoint(targetPos)
+            if onScreen then
+                local mouseLocation = UserInputService:GetMouseLocation()
+                local delta = Vector2.new(screenPos.X, screenPos.Y) - mouseLocation
+                
+                if type(mousemoverel) == "function" then
+                    mousemoverel(delta.X / AimbotSettings.Sensitivity2, delta.Y / AimbotSettings.Sensitivity2)
+                end
+            end
+        elseif AimbotSettings.LockMode == 3 then
+            -- Third Person
+            local screenPos, onScreen = cam:WorldToViewportPoint(targetPos)
+            if onScreen then
+                local center = cam.ViewportSize / 2
+                local delta = Vector2.new(screenPos.X, screenPos.Y) - center
+                local distance = delta.Magnitude
+                
+                if distance > AimbotSettings.ThirdPerson.Deadzone then
+                    local sensitivityFactor = 1 - AimbotSettings.ThirdPerson.Smoothness
+                    if sensitivityFactor < 0.05 then sensitivityFactor = 0.05 end
+                    
+                    local move = (delta / AimbotSettings.ThirdPerson.Sensitivity) * sensitivityFactor
+                    
+                    if AimbotSettings.RotationMethod == "Mouse" and type(mousemoverel) == "function" then
+                        mousemoverel(move.X, move.Y)
+                    else
+                        local targetCFrame = CFrame.new(cam.CFrame.Position, targetPos)
+                        cam.CFrame = cam.CFrame:Lerp(targetCFrame, sensitivityFactor)
                     end
                 end
             end
         end
-        
-        if StatusText then
-            StatusText.Visible = AimbotSettings.FOV.Visible
-            StatusText.Position = Vector2.new(circlePos.X, circlePos.Y + (AimbotSettings.FOV.Radius or 100) + 20)
-            if not AimbotSettings.Enabled then
-                StatusText.Text = "OFF"
-                StatusText.Color = Color3.new(1,0,0)
-            elseif _aimbotLocked and currentTarget then
-                StatusText.Text = _aimbotRunning and ("LOCKED: " .. tostring(currentTarget.Name)) or ("FOUND: " .. tostring(currentTarget.Name))
-                StatusText.Color = _aimbotRunning and Color3.new(0,1,0) or Color3.new(1,1,0)
-            else
-                StatusText.Text = "SCAN: " .. tostring(lastDebugReason)
-                StatusText.Color = Color3.new(1,1,1)
-            end
-        end
-    end)
-
-    -- Step 3: Logic
-    local s_logic, err_logic = pcall(function()
-        if not AimbotSettings.Enabled then
-            if _aimbotLocked then _aimbotCancelLock() end
-            return
-        end
-        
-        if AimbotSettings.AlwaysActive then
-            _aimbotRunning = true
-        elseif not AimbotSettings.Toggle and type(isTriggerHeld) == "function" then
-            pcall(function() _aimbotRunning = isTriggerHeld() end)
-        end
-        
-        if not _aimbotRunning then return end
-        if not _aimbotLocked or not currentTarget then return end
-        
-        local char = currentTarget.Character
-        if not char then _aimbotCancelLock() return end
-        
-        local targetPart
-        if type(getBestBodyPart) == "function" then
-            targetPart = getBestBodyPart(char)
-        end
-        if not targetPart then _aimbotCancelLock() return end
-        
-        -- Pass targetPart to next step via upvalue or return (but here we just ensure it exists)
-    end)
-
-    if not s_logic then
-        return -- Exit if logic failed
-    end
-
-    -- Re-verify critical state before movement
-    if not _aimbotRunning or not _aimbotLocked or not currentTarget then return end
-    
-    -- Step 5: Movement
-    local s_move, err_move = pcall(function()
-        -- Re-acquire targetPart to ensure existence in this scope
-        local char = currentTarget and currentTarget.Character
-        if not char then return end
-        local targetPart
-        if type(getBestBodyPart) == "function" then
-            targetPart = getBestBodyPart(char)
-        end
-        if not targetPart then return end
-
-        local targetPos
-        if AimbotSettings.LockPart == "Head" and type(getHeadPosition) == "function" then
-            local headPos = getHeadPosition(currentTarget)
-            if headPos then
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    targetPos = headPos + (hrp.Velocity * AimbotSettings.Prediction)
-                else
-                    targetPos = headPos
-                end
-            else
-                targetPos = targetPart.Position
-            end
-        elseif type(predict) == "function" then
-            targetPos = predict(currentTarget) or targetPart.Position
-        else
-            targetPos = targetPart.Position
-        end
-        
-        if not targetPos then return end
-
-        if AimbotSettings.LockMode == 2 then
-            local sv = cam:WorldToViewportPoint(targetPos)
-            local delta = Vector2.new(sv.X, sv.Y) - mousePos
-            if type(mousemoverel) == "function" then
-                mousemoverel(delta.X / AimbotSettings.Sensitivity2, delta.Y / AimbotSettings.Sensitivity2)
-            elseif type(mousemove) == "function" then
-                mousemove(delta.X / AimbotSettings.Sensitivity2, delta.Y / AimbotSettings.Sensitivity2)
-            end
-        elseif AimbotSettings.LockMode == 3 then
-            if type(thirdPersonAimbot) == "function" then
-                thirdPersonAimbot(targetPos)
-            end
-        else
-            local targetCFrame = CFrame.new(cam.CFrame.Position, targetPos)
-            if AimbotSettings.Sensitivity > 0 and type(smoothCFrame) == "function" then
-                cam.CFrame = smoothCFrame(cam.CFrame, targetCFrame)
-            else
-                cam.CFrame = targetCFrame
-            end
-        end
-    end)
-    
-    if not s_move then
-        LogError("Movement Error:", err_move)
+    else
+        if LockLine then LockLine.Visible = false end
     end
 end
 
--- Safely run update with error printing
-local function SafeAimbotUpdate()
-    if type(_aimbotUpdate) == "function" then
-        local success, err = pcall(_aimbotUpdate)
-        if not success then
-            SafeWarn("[Aimbot Critical]:", err)
-        end
-    end
-end
-
--- Fixed input handling
--- Use BindToRenderStep with high priority to run AFTER game camera scripts
--- Priority Last to ensure we override everything
+-- Run Loop
 pcall(function() RunService:UnbindFromRenderStep("UniversalAimbot") end)
-RunService:BindToRenderStep("UniversalAimbot", Enum.RenderPriority.Last.Value, SafeAimbotUpdate)
-
-_aimbotConns.inputBegan = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not AimbotSettings.Enabled then return end
-    
-    if not _lastEnabledState then
-        _lastEnabledState = true
-    end
-    
-    local tk = AimbotSettings.TriggerKey
-    local inputMatched = false
-    
-    if input.UserInputType == tk or input.KeyCode == tk then
-        inputMatched = true
-    end
-    
-    -- If input matches the trigger key
-    if inputMatched then
-        if AimbotSettings.Toggle then
-            _aimbotRunning = not _aimbotRunning
-            aiming = _aimbotRunning
-            if not _aimbotRunning then 
-                _aimbotCancelLock()
-            end
-        else
-            _aimbotRunning = true
-            aiming = true
-        end
-    end
-end)
-
-_aimbotConns.inputEnded = UserInputService.InputEnded:Connect(function(input, gameProcessed)
-    if AimbotSettings.Toggle or not AimbotSettings.Enabled then return end
-    
-    local tk = AimbotSettings.TriggerKey
-    local inputMatched = false
-    
-    if input.UserInputType == tk or input.KeyCode == tk then
-        inputMatched = true
-    end
-    
-    -- If input matches the trigger key and not in toggle mode
-    if inputMatched then
-        _aimbotRunning = false
-        aiming = false
-        _aimbotCancelLock()
-    end
-end)
+RunService:BindToRenderStep("UniversalAimbot", Enum.RenderPriority.Last.Value, _aimbotUpdate)
 
 -- ══════════════════════════════════════════
 -- BUILD LINORIA UI
