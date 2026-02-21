@@ -947,7 +947,7 @@ DepFOV:SetupDependencies({ { Toggles.ShowFOV, true } })
 -- RIGHT: Silent Aim
 local GbSilent = Tabs.Aimbot:AddRightGroupbox("Silent Aim")
 GbSilent:AddToggle("SilentAimEnabled", {
-    Text    = "Silent Aim Enabled (Experimental)",
+    Text    = "Silent Aim (Experimental)",
     Default = SilentAimSettings.Enabled,
     Tooltip = "Silently redirects bullets to target without moving cursor",
 })
