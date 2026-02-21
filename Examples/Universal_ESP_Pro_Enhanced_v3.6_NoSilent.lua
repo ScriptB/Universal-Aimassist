@@ -179,6 +179,11 @@ local AimbotSettings = {
 }
 
 -- ══════════════════════════════════════════
+-- SERVICES
+-- ══════════════════════════════════════════
+local UserInputService = game:GetService("UserInputService")
+
+-- ══════════════════════════════════════════
 -- ESP CORE
 -- ══════════════════════════════════════════
 local ESPObjects = {}
@@ -428,7 +433,6 @@ end)
 -- ══════════════════════════════════════════
 -- AIMBOT CORE
 -- ══════════════════════════════════════════
-local UserInputService = game:GetService("UserInputService")
 
 local FovCircle = NewDrawing("Circle", {
     Thickness    = 1,
