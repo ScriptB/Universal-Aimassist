@@ -101,11 +101,7 @@ local function DeepDeserialize(t)
 end
 
 local function Notify(title, content, duration)
-    Library:Notify({
-        Title    = title,
-        Content  = content,
-        Duration = duration or 4,
-    })
+    Library:Notify(title .. "\n" .. content, duration or 4)
 end
 
 local function SaveConfig()
@@ -600,8 +596,22 @@ end)
 -- ══════════════════════════════════════════
 -- WATERMARK
 -- ══════════════════════════════════════════
+-- Watermark: bottom-left
 Library:SetWatermarkVisibility(true)
+Library.Watermark.Position = UDim2.new(0, 10, 1, -30)
+
+-- KeybindFrame: bottom-left above watermark, auto-hide after 10s
+Library.KeybindFrame.Position = UDim2.new(0, 10, 1, -55)
 Library.KeybindFrame.Visible = true
+task.delay(10, function()
+    if Library.KeybindFrame then
+        Library.KeybindFrame.Visible = false
+    end
+end)
+
+-- NotificationArea: bottom-right
+Library.NotificationArea.Position = UDim2.new(1, -310, 1, -210)
+Library.NotificationArea.AnchorPoint = Vector2.new(0, 1)
 
 local _frameTimer   = tick()
 local _frameCounter = 0
