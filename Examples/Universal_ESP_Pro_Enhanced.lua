@@ -344,8 +344,10 @@ local function IsVisible(char, part)
     local dir    = (part.Position - origin)
     local ray    = Ray.new(origin, dir)
     local ignore = { myChar, Camera }
-    local hit    = workspace:FindPartOnRayWithIgnoreList(ray, ignore)
-    if hit == nil then return true end
+    local ok, hit = pcall(function()
+        return workspace:FindPartOnRayWithIgnoreList(ray, ignore)
+    end)
+    if not ok or hit == nil then return true end
     return hit:IsDescendantOf(char)
 end
 
@@ -384,11 +386,13 @@ local function GetClosestToMouse()
 end
 
 -- mousemoverel-based aim: moves the mouse delta toward the target
+local _mousemoverel = mousemoverel or (syn and syn.mouse_moverel)
 local function AimAt(worldPos)
+    if not _mousemoverel then return end
     local screenPos = Camera:WorldToViewportPoint(worldPos)
     local dx = (screenPos.X - Mouse.X) * AimbotSettings.Sensitivity
     local dy = (screenPos.Y - Mouse.Y) * AimbotSettings.Sensitivity
-    mousemoverel(dx, dy)
+    _mousemoverel(dx, dy)
 end
 
 local function AimbotStep()
@@ -430,13 +434,16 @@ local function AimbotStep()
     end
 
     if target then
-        AimAt(target:GetRenderCFrame().Position)
+        local ok, pos = pcall(function() return target.CFrame.Position end)
+        if ok and pos then AimAt(pos) end
     end
 end
 
 -- Silent Aim: hook raycasts so bullets redirect to nearest target
+-- Store originals as bound methods to call correctly
 local _origFPORWW = workspace.FindPartOnRayWithWhitelist
 local _origFPOR   = workspace.FindPartOnRay
+local _saHooked   = false
 
 local function GetSilentTarget()
     local part, _ = GetClosestToMouse()
@@ -444,33 +451,37 @@ local function GetSilentTarget()
 end
 
 local function HookSilentAim()
-    workspace.FindPartOnRayWithWhitelist = function(ws, ray, whitelist, ...)
+    if _saHooked then return end
+    _saHooked = true
+    workspace.FindPartOnRayWithWhitelist = function(self, ray, whitelist, ...)
         if AimbotSettings.SilentAim then
-            local target = GetSilentTarget()
-            if target then
+            local ok, target = pcall(GetSilentTarget)
+            if ok and target then
                 local dir    = (target.Position - ray.Origin).Unit
                 local newRay = Ray.new(ray.Origin, dir * ray.Direction.Magnitude)
-                return _origFPORWW(ws, newRay, whitelist, ...)
+                return _origFPORWW(self, newRay, whitelist, ...)
             end
         end
-        return _origFPORWW(ws, ray, whitelist, ...)
+        return _origFPORWW(self, ray, whitelist, ...)
     end
-    workspace.FindPartOnRay = function(ws, ray, ...)
+    workspace.FindPartOnRay = function(self, ray, ...)
         if AimbotSettings.SilentAim then
-            local target = GetSilentTarget()
-            if target then
+            local ok, target = pcall(GetSilentTarget)
+            if ok and target then
                 local dir    = (target.Position - ray.Origin).Unit
                 local newRay = Ray.new(ray.Origin, dir * ray.Direction.Magnitude)
-                return _origFPOR(ws, newRay, ...)
+                return _origFPOR(self, newRay, ...)
             end
         end
-        return _origFPOR(ws, ray, ...)
+        return _origFPOR(self, ray, ...)
     end
 end
 
 local function UnhookSilentAim()
+    if not _saHooked then return end
     workspace.FindPartOnRayWithWhitelist = _origFPORWW
     workspace.FindPartOnRay              = _origFPOR
+    _saHooked = false
 end
 
 HookSilentAim()
@@ -882,7 +893,7 @@ Options.HealthThickness:OnChanged(function() Settings.Health.Thickness   = Optio
 Toggles.RainbowEnabled:OnChanged(function() Settings.Rainbow.Enabled    = Toggles.RainbowEnabled.Value  end)
 Options.RainbowSpeed:OnChanged(function()   Settings.Rainbow.Speed       = Options.RainbowSpeed.Value    end)
 
-Options.ESPKeybind:OnClick(function()
+Options.ESPKeybind:OnChanged(function()
     Settings.Enabled = Toggles.ESPEnabled.Value
 end)
 
