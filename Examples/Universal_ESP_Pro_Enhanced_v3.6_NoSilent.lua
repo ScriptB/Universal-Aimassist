@@ -157,11 +157,6 @@ local AimbotSettings = {
     Keybind      = "RightMouseButton",
 }
 
--- FOV Recalibration for 3rd person cursor drift
-local lastFOVRecalibration = 0
-local FOV_RECALIBRATION_INTERVAL = 3 -- seconds
-local calibratedMouseCenter = nil
-
 -- ══════════════════════════════════════════
 -- ESP CORE
 -- ══════════════════════════════════════════
@@ -342,8 +337,23 @@ local function GetClosestTarget()
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
     else
-        -- In 3rd person, use the calibrated mouse center to match FOV circle behavior
-        center = calibratedMouseCenter or mouseLoc
+        -- In 3rd person, calculate enhanced center accounting for camera displacement
+        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local guiInset = game:GetService("GuiService"):GetGuiInset()
+        screenCenter = screenCenter - (guiInset / 2)
+        
+        -- Check if mouse is significantly displaced from screen center
+        local displacement = (mouseLoc - screenCenter).Magnitude
+        local maxReasonableDisplacement = math.min(Camera.ViewportSize.X, Camera.ViewportSize.Y) * 0.3
+        
+        if displacement > maxReasonableDisplacement then
+            -- Mouse is displaced, likely due to weapon offset - use interpolated center
+            local weight = math.min(displacement / maxReasonableDisplacement, 2) * 0.5
+            center = screenCenter:Lerp(mouseLoc, weight)
+        else
+            -- Normal case - use mouse location
+            center = mouseLoc
+        end
     end
     
     local bestDist = AimbotSettings.FOV
@@ -845,32 +855,31 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle with recalibration for 3rd person cursor drift
+    -- FOV circle
     local mouseLoc = UserInputService:GetMouseLocation()
     local fovCenter
-    local currentTime = tick()
-    
     if AimbotSettings.Mode == "Mouse (1st Person)" then
         -- In 1st person, the mouse is fixed at the center of the screen
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
     else
-        -- In 3rd person, use recalibrated mouse center to handle cursor drift
-        if currentTime - lastFOVRecalibration >= FOV_RECALIBRATION_INTERVAL or not calibratedMouseCenter then
-            -- Recalibrate by checking if cursor is close to screen center
-            local guiInset = game:GetService("GuiService"):GetGuiInset()
-            local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
-            local distanceFromCenter = (mouseLoc - screenCenter).Magnitude
-            
-            -- If cursor is reasonably close to center (within 50 pixels), use it as calibration
-            if distanceFromCenter <= 50 or not calibratedMouseCenter then
-                calibratedMouseCenter = mouseLoc
-                lastFOVRecalibration = currentTime
-            end
-        end
+        -- In 3rd person, calculate enhanced center accounting for camera displacement
+        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local guiInset = game:GetService("GuiService"):GetGuiInset()
+        screenCenter = screenCenter - (guiInset / 2)
         
-        -- Use calibrated center if available, otherwise fall back to current mouse location
-        fovCenter = calibratedMouseCenter or mouseLoc
+        -- Check if mouse is significantly displaced from screen center
+        local displacement = (mouseLoc - screenCenter).Magnitude
+        local maxReasonableDisplacement = math.min(Camera.ViewportSize.X, Camera.ViewportSize.Y) * 0.3
+        
+        if displacement > maxReasonableDisplacement then
+            -- Mouse is displaced, likely due to weapon offset - use interpolated center
+            local weight = math.min(displacement / maxReasonableDisplacement, 2) * 0.5
+            fovCenter = screenCenter:Lerp(mouseLoc, weight)
+        else
+            -- Normal case - use mouse location
+            fovCenter = mouseLoc
+        end
     end
 
     if AimbotSettings.ShowFOV and AimbotSettings.Enabled then
