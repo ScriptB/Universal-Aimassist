@@ -558,7 +558,9 @@ GbAim:AddLabel("Hold Key"):AddKeyPicker("AimbotKey", {
     Mode    = "Hold",
     Text    = "Aim",
     Tooltip = "Hold this key to activate aimbot",
-})
+}):OnChanged(function()
+    -- Keybind change handled automatically by LinoriaLib
+end)
 GbAim:AddDivider()
 local DepAim = GbAim:AddDependencyBox()
 DepAim:AddDropdown("AimbotMode", {
@@ -852,7 +854,7 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         fovCenter = mouseLoc
     end
 
-    if AimbotSettings.ShowFOV then
+    if AimbotSettings.ShowFOV and AimbotSettings.Enabled then
         FovCircle.Position    = fovCenter
         FovCircle.Radius      = AimbotSettings.FOV
         FovCircle.Color       = AimbotSettings.FOVColor
