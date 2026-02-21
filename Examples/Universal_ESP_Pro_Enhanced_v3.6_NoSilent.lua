@@ -330,38 +330,44 @@ local function getBestBodyPart(char)
 end
 
 
--- Function to get true crosshair position using camera ray casting
-local function getTrueCrosshairPosition()
+-- Function to get camera-compensated crosshair position
+-- Based on forum research: https://devforum.roblox.com/t/unusual-worldtoviewportpoint-behavior/3309800
+local function getCameraCompensatedCenter()
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local guiInset = game:GetService("GuiService"):GetGuiInset()
     screenCenter = screenCenter - (guiInset / 2)
     
-    -- Use camera's look direction to find true aiming point
-    local ray = workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 1000)
-    if ray then
-        local hitPoint = ray.Position
-        local screenPos, onScreen = Camera:WorldToViewportPoint(hitPoint)
-        if onScreen then
-            return Vector2.new(screenPos.X, screenPos.Y)
+    -- For third person, create a virtual raycast point that compensates for camera displacement
+    if AimbotSettings.Mode ~= "Mouse (1st Person)" then
+        -- Get mouse ray from camera (forum solution: use camera origin with mouse direction)
+        local mouse = game.Players.LocalPlayer:GetMouse()
+        local unitRay = Camera:ScreenPointToRay(mouse.X, mouse.Y)
+        
+        -- Cast ray to find where camera would actually hit
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.FilterDescendantsInstances = {game.Players.LocalPlayer.Character}
+        
+        local result = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000, raycastParams)
+        if result then
+            -- Convert hit point back to screen coordinates
+            local hitScreenPos, onScreen = Camera:WorldToViewportPoint(result.Position)
+            if onScreen then
+                return Vector2.new(hitScreenPos.X, hitScreenPos.Y)
+            end
         end
+        
+        -- Fallback: use mouse position directly (most reliable for third person)
+        return Vector2.new(mouse.X, mouse.Y)
     end
     
-    -- Fallback to screen center if raycast fails
+    -- For first person, use screen center
     return screenCenter
 end
 
 local function GetClosestTarget()
-    local mouseLoc = UserInputService:GetMouseLocation()
-    local center
-    
-    if AimbotSettings.Mode == "Mouse (1st Person)" then
-        -- In 1st person, the mouse is fixed at the center of the screen
-        local guiInset = game:GetService("GuiService"):GetGuiInset()
-        center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
-    else
-        -- In 3rd person, use actual mouse cursor location
-        center = mouseLoc
-    end
+    -- Use camera-compensated center for both FOV and targeting consistency
+    local center = getCameraCompensatedCenter()
     
     local bestDist = AimbotSettings.FOV
     local bestChar = nil
@@ -862,18 +868,8 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle - ALWAYS follows cursor perfectly in 3rd person
-    local mouseLoc = UserInputService:GetMouseLocation()
-    local fovCenter
-    
-    if AimbotSettings.Mode == "Mouse (1st Person)" then
-        -- In 1st person, the mouse is fixed at the center of the screen
-        local guiInset = game:GetService("GuiService"):GetGuiInset()
-        fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
-    else
-        -- In 3rd person, ALWAYS use direct mouse cursor location regardless of gun mechanics
-        fovCenter = mouseLoc
-    end
+    -- FOV circle - use same camera-compensated center as aimbot for perfect sync
+    local fovCenter = getCameraCompensatedCenter()
 
     if AimbotSettings.ShowFOV then
         FovCircle.Position    = fovCenter
