@@ -546,7 +546,10 @@ oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
         if methodEnabled then
             if key == "Hit" or key == "hit" then
                 -- Use prediction if enabled (future enhancement)
-                return SilentAimState.TargetPart.CFrame
+                local targetPos = SilentAimState.TargetPart.Position
+                -- Create proper CFrame oriented towards camera like normal Mouse.Hit
+                local lookDirection = (Camera.CFrame.Position - targetPos).Unit
+                return CFrame.lookAt(targetPos, targetPos + lookDirection)
             elseif key == "Target" or key == "target" then
                 return SilentAimState.TargetPart
             elseif key == "X" or key == "x" then
