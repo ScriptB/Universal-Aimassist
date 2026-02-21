@@ -1,5 +1,5 @@
--- Universal ESP Pro Enhanced v3.1
--- UI: AquaLib | Full ESP | Config System
+-- Universal ESP Pro Enhanced v3.2
+-- UI: Orion Library | Full ESP | Config System
 -- Loadstring: loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptB/Universal-Scripts/main/Examples/Universal_ESP_Pro_Enhanced.lua", true))()
 
 repeat task.wait() until game:IsLoaded()
@@ -7,16 +7,16 @@ repeat task.wait() until game:IsLoaded()
 -- ══════════════════════════════════════════
 -- SERVICES
 -- ══════════════════════════════════════════
-local Players          = game:GetService("Players")
-local RunService       = game:GetService("RunService")
-local HttpService      = game:GetService("HttpService")
-local Camera           = workspace.CurrentCamera
-local LocalPlayer      = Players.LocalPlayer
+local Players     = game:GetService("Players")
+local RunService  = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local Camera      = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
 -- ══════════════════════════════════════════
--- LOAD UI LIBRARY
+-- LOAD ORION UI LIBRARY
 -- ══════════════════════════════════════════
-local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/TheoTheEpic/AquaLib/main/AquaLib.lua"))()
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
 -- ══════════════════════════════════════════
 -- ESP SETTINGS
@@ -221,16 +221,14 @@ local function UpdateESP(e)
     local bl = Vector2.new(cx - w/2, cy + h/2)
     local br = Vector2.new(cx + w/2, cy + h/2)
 
-    -- Box
-    local bc  = GetColor(player, Settings.Box.Color)
-    local bv  = Settings.Enabled and Settings.Box.Enabled
-    local bt  = Settings.Box.Thickness
+    local bc = GetColor(player, Settings.Box.Color)
+    local bv = Settings.Enabled and Settings.Box.Enabled
+    local bt = Settings.Box.Thickness
     e.Boxes[1].From = tl; e.Boxes[1].To = tr; e.Boxes[1].Color = bc; e.Boxes[1].Thickness = bt; e.Boxes[1].Visible = bv
     e.Boxes[2].From = tr; e.Boxes[2].To = br; e.Boxes[2].Color = bc; e.Boxes[2].Thickness = bt; e.Boxes[2].Visible = bv
     e.Boxes[3].From = br; e.Boxes[3].To = bl; e.Boxes[3].Color = bc; e.Boxes[3].Thickness = bt; e.Boxes[3].Visible = bv
     e.Boxes[4].From = bl; e.Boxes[4].To = tl; e.Boxes[4].Color = bc; e.Boxes[4].Thickness = bt; e.Boxes[4].Visible = bv
 
-    -- Tracer
     local tOrigin
     if Settings.Tracer.Origin == "Top" then
         tOrigin = Vector2.new(Camera.ViewportSize.X / 2, 0)
@@ -245,7 +243,6 @@ local function UpdateESP(e)
     e.Tracer.Thickness = Settings.Tracer.Thickness
     e.Tracer.Visible   = Settings.Enabled and Settings.Tracer.Enabled
 
-    -- Name
     local nameStr = player.Name
     if Settings.Name.ShowDistance then nameStr = nameStr .. " [" .. math.floor(dist) .. "m]" end
     if Settings.Name.ShowHealth and hum then nameStr = nameStr .. " [" .. math.floor(hum.Health) .. "hp]" end
@@ -256,20 +253,19 @@ local function UpdateESP(e)
     e.Name.Position = Vector2.new(cx, tl.Y - Settings.Name.Size - 2)
     e.Name.Visible  = Settings.Enabled and Settings.Name.Enabled
 
-    -- Health Bar
     if hum and Settings.Health.Enabled and Settings.Health.ShowBar then
         local ratio  = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
         local bx     = tl.X - 6
         local hColor = Color3.fromRGB(math.floor(255 * (1 - ratio)), math.floor(255 * ratio), 0)
-        e.HpBg.From      = Vector2.new(bx, tl.Y)
-        e.HpBg.To        = Vector2.new(bx, bl.Y)
-        e.HpBg.Thickness = Settings.Health.Thickness + 1
-        e.HpBg.Visible   = Settings.Enabled
-        e.HpBar.From     = Vector2.new(bx, bl.Y - (bl.Y - tl.Y) * ratio)
-        e.HpBar.To       = Vector2.new(bx, bl.Y)
-        e.HpBar.Color    = hColor
+        e.HpBg.From       = Vector2.new(bx, tl.Y)
+        e.HpBg.To         = Vector2.new(bx, bl.Y)
+        e.HpBg.Thickness  = Settings.Health.Thickness + 1
+        e.HpBg.Visible    = Settings.Enabled
+        e.HpBar.From      = Vector2.new(bx, bl.Y - (bl.Y - tl.Y) * ratio)
+        e.HpBar.To        = Vector2.new(bx, bl.Y)
+        e.HpBar.Color     = hColor
         e.HpBar.Thickness = Settings.Health.Thickness
-        e.HpBar.Visible  = Settings.Enabled
+        e.HpBar.Visible   = Settings.Enabled
         if Settings.Health.ShowText then
             e.HpText.Text     = math.floor(hum.Health) .. "hp"
             e.HpText.Position = Vector2.new(bx, tl.Y - 12)
@@ -285,96 +281,177 @@ local function UpdateESP(e)
 end
 
 -- ══════════════════════════════════════════
--- BUILD UI (AquaLib)
+-- BUILD ORION UI
 -- ══════════════════════════════════════════
-local window = lib.createWindow("Universal ESP Pro Enhanced", "UniversalESP", true)
+local Window = OrionLib:MakeWindow({
+    Name        = "Universal ESP Pro Enhanced",
+    HidePremium = true,
+    SaveConfig  = false,
+})
 
 -- ── Tab: ESP ───────────────────────────────
-local tabESP = window.createTab("ESP")
+local TabESP = Window:MakeTab({ Name = "ESP", Icon = "rbxassetid://4483345998" })
 
-local secMaster = tabESP.createSection("Master", false)
-secMaster.createToggle("ESP Enabled", Settings.Enabled, function(v)
-    Settings.Enabled = v
-end)
-secMaster.createToggle("Team Check", Settings.TeamCheck, function(v)
-    Settings.TeamCheck = v
-end)
-secMaster.createToggle("Team Color", Settings.TeamColor, function(v)
-    Settings.TeamColor = v
-end)
-secMaster.createSlider("Max Distance", { min = 100, max = 5000, defualt = Settings.MaxDist }, function(v)
-    Settings.MaxDist = v
-end)
+TabESP:AddToggle({
+    Name     = "ESP Enabled",
+    Default  = Settings.Enabled,
+    Callback = function(v) Settings.Enabled = v end,
+})
+TabESP:AddToggle({
+    Name     = "Team Check",
+    Default  = Settings.TeamCheck,
+    Callback = function(v) Settings.TeamCheck = v end,
+})
+TabESP:AddToggle({
+    Name     = "Team Color",
+    Default  = Settings.TeamColor,
+    Callback = function(v) Settings.TeamColor = v end,
+})
+TabESP:AddSlider({
+    Name      = "Max Distance",
+    Min       = 100,
+    Max       = 5000,
+    Default   = Settings.MaxDist,
+    Increment = 50,
+    ValueName = "studs",
+    Callback  = function(v) Settings.MaxDist = v end,
+})
 
-local secBox = tabESP.createSection("Box ESP", false)
-secBox.createToggle("Box Enabled", Settings.Box.Enabled, function(v)
-    Settings.Box.Enabled = v
-end)
-secBox.createSlider("Box Thickness", { min = 1, max = 5, defualt = Settings.Box.Thickness }, function(v)
-    Settings.Box.Thickness = v
-end)
+TabESP:AddLabel("── Box ESP ──")
+TabESP:AddToggle({
+    Name     = "Box Enabled",
+    Default  = Settings.Box.Enabled,
+    Callback = function(v) Settings.Box.Enabled = v end,
+})
+TabESP:AddSlider({
+    Name      = "Box Thickness",
+    Min       = 1,
+    Max       = 5,
+    Default   = Settings.Box.Thickness,
+    Increment = 1,
+    ValueName = "px",
+    Callback  = function(v) Settings.Box.Thickness = v end,
+})
+TabESP:AddColorpicker({
+    Name     = "Box Color",
+    Default  = Settings.Box.Color,
+    Callback = function(v) Settings.Box.Color = v end,
+})
 
-local secTracer = tabESP.createSection("Tracer ESP", false)
-secTracer.createToggle("Tracer Enabled", Settings.Tracer.Enabled, function(v)
-    Settings.Tracer.Enabled = v
-end)
-secTracer.createSlider("Tracer Thickness", { min = 1, max = 5, defualt = Settings.Tracer.Thickness }, function(v)
-    Settings.Tracer.Thickness = v
-end)
-secTracer.createDropdown("Tracer Origin", { "Bottom", "Center", "Top" }, Settings.Tracer.Origin, function(v)
-    Settings.Tracer.Origin = v
-end)
+TabESP:AddLabel("── Tracer ESP ──")
+TabESP:AddToggle({
+    Name     = "Tracer Enabled",
+    Default  = Settings.Tracer.Enabled,
+    Callback = function(v) Settings.Tracer.Enabled = v end,
+})
+TabESP:AddSlider({
+    Name      = "Tracer Thickness",
+    Min       = 1,
+    Max       = 5,
+    Default   = Settings.Tracer.Thickness,
+    Increment = 1,
+    ValueName = "px",
+    Callback  = function(v) Settings.Tracer.Thickness = v end,
+})
+TabESP:AddColorpicker({
+    Name     = "Tracer Color",
+    Default  = Settings.Tracer.Color,
+    Callback = function(v) Settings.Tracer.Color = v end,
+})
+TabESP:AddDropdown({
+    Name     = "Tracer Origin",
+    Default  = Settings.Tracer.Origin,
+    Options  = { "Bottom", "Center", "Top" },
+    Callback = function(v) Settings.Tracer.Origin = v end,
+})
 
-local secName = tabESP.createSection("Name ESP", false)
-secName.createToggle("Name Enabled", Settings.Name.Enabled, function(v)
-    Settings.Name.Enabled = v
-end)
-secName.createToggle("Show Distance", Settings.Name.ShowDistance, function(v)
-    Settings.Name.ShowDistance = v
-end)
-secName.createToggle("Show Health", Settings.Name.ShowHealth, function(v)
-    Settings.Name.ShowHealth = v
-end)
-secName.createToggle("Name Outline", Settings.Name.Outline, function(v)
-    Settings.Name.Outline = v
-end)
-secName.createSlider("Name Size", { min = 10, max = 24, defualt = Settings.Name.Size }, function(v)
-    Settings.Name.Size = v
-end)
+TabESP:AddLabel("── Name ESP ──")
+TabESP:AddToggle({
+    Name     = "Name Enabled",
+    Default  = Settings.Name.Enabled,
+    Callback = function(v) Settings.Name.Enabled = v end,
+})
+TabESP:AddToggle({
+    Name     = "Show Distance",
+    Default  = Settings.Name.ShowDistance,
+    Callback = function(v) Settings.Name.ShowDistance = v end,
+})
+TabESP:AddToggle({
+    Name     = "Show Health in Name",
+    Default  = Settings.Name.ShowHealth,
+    Callback = function(v) Settings.Name.ShowHealth = v end,
+})
+TabESP:AddToggle({
+    Name     = "Name Outline",
+    Default  = Settings.Name.Outline,
+    Callback = function(v) Settings.Name.Outline = v end,
+})
+TabESP:AddSlider({
+    Name      = "Name Size",
+    Min       = 10,
+    Max       = 24,
+    Default   = Settings.Name.Size,
+    Increment = 1,
+    ValueName = "pt",
+    Callback  = function(v) Settings.Name.Size = v end,
+})
+TabESP:AddColorpicker({
+    Name     = "Name Color",
+    Default  = Settings.Name.Color,
+    Callback = function(v) Settings.Name.Color = v end,
+})
 
-local secHealth = tabESP.createSection("Health Bar", false)
-secHealth.createToggle("Health Bar Enabled", Settings.Health.Enabled, function(v)
-    Settings.Health.Enabled = v
-end)
-secHealth.createToggle("Health Text", Settings.Health.ShowText, function(v)
-    Settings.Health.ShowText = v
-end)
-secHealth.createSlider("Bar Thickness", { min = 1, max = 6, defualt = Settings.Health.Thickness }, function(v)
-    Settings.Health.Thickness = v
-end)
+TabESP:AddLabel("── Health Bar ──")
+TabESP:AddToggle({
+    Name     = "Health Bar Enabled",
+    Default  = Settings.Health.Enabled,
+    Callback = function(v) Settings.Health.Enabled = v end,
+})
+TabESP:AddToggle({
+    Name     = "Health Text",
+    Default  = Settings.Health.ShowText,
+    Callback = function(v) Settings.Health.ShowText = v end,
+})
+TabESP:AddSlider({
+    Name      = "Health Bar Thickness",
+    Min       = 1,
+    Max       = 6,
+    Default   = Settings.Health.Thickness,
+    Increment = 1,
+    ValueName = "px",
+    Callback  = function(v) Settings.Health.Thickness = v end,
+})
 
 -- ── Tab: Visuals ───────────────────────────
-local tabVisuals = window.createTab("Visuals")
+local TabVisuals = Window:MakeTab({ Name = "Visuals", Icon = "rbxassetid://4483345998" })
 
-local secRainbow = tabVisuals.createSection("Rainbow", false)
-secRainbow.createToggle("Rainbow Mode", Settings.Rainbow.Enabled, function(v)
-    Settings.Rainbow.Enabled = v
-end)
-secRainbow.createSlider("Rainbow Speed", { min = 1, max = 10, defualt = Settings.Rainbow.Speed }, function(v)
-    Settings.Rainbow.Speed = v
-end)
+TabVisuals:AddToggle({
+    Name     = "Rainbow Mode",
+    Default  = Settings.Rainbow.Enabled,
+    Callback = function(v) Settings.Rainbow.Enabled = v end,
+})
+TabVisuals:AddSlider({
+    Name      = "Rainbow Speed",
+    Min       = 1,
+    Max       = 10,
+    Default   = Settings.Rainbow.Speed,
+    Increment = 1,
+    ValueName = "x",
+    Callback  = function(v) Settings.Rainbow.Speed = v end,
+})
 
 -- ── Tab: Config ────────────────────────────
-local tabConfig = window.createTab("Config")
+local TabConfig = Window:MakeTab({ Name = "Config", Icon = "rbxassetid://4483345998" })
 
-local secConfig = tabConfig.createSection("Configuration", false)
-secConfig.createButton("Save Config", function()
-    SaveConfig()
-end)
-secConfig.createButton("Load Config", function()
-    LoadConfig()
-end)
-secConfig.createText("Config file: UniversalESP_Config.json")
+TabConfig:AddButton({
+    Name     = "Save Config",
+    Callback = SaveConfig,
+})
+TabConfig:AddButton({
+    Name     = "Load Config",
+    Callback = LoadConfig,
+})
+TabConfig:AddLabel("File: UniversalESP_Config.json")
 
 -- ══════════════════════════════════════════
 -- ESP RUNTIME
@@ -415,4 +492,7 @@ getgenv().UniversalESP = {
     end,
 }
 
-print("[Universal ESP Pro Enhanced v3.1] Loaded successfully.")
+-- REQUIRED: Orion must be initialized last
+OrionLib:Init()
+
+print("[Universal ESP Pro Enhanced v3.2] Loaded successfully.")
