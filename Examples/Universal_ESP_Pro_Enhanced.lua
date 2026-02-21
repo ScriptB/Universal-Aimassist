@@ -65,7 +65,7 @@ end
 
 -- Wait for character to load
 local LocalPlayer = Players.LocalPlayer
-repeat task.wait() until LocalPlayer and LocalPlayer.Character
+-- Removed infinite yield for character to ensure UI loads even in menus
 
 -- Utility functions
 local function SafeCall(func, ...)
