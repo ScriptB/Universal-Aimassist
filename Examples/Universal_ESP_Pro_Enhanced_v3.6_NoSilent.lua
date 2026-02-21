@@ -329,30 +329,58 @@ local function getBestBodyPart(char)
         or char:FindFirstChild("Head")
 end
 
+-- Function to get true crosshair position using camera ray casting
+local function getTrueCrosshairPosition()
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local guiInset = game:GetService("GuiService"):GetGuiInset()
+    screenCenter = screenCenter - (guiInset / 2)
+    
+    -- Use camera's look direction to find true aiming point
+    local ray = workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 1000)
+    if ray then
+        local hitPoint = ray.Position
+        local screenPos, onScreen = Camera:WorldToViewportPoint(hitPoint)
+        if onScreen then
+            return Vector2.new(screenPos.X, screenPos.Y)
+        end
+    end
+    
+    -- Fallback to screen center if raycast fails
+    return screenCenter
+end
+
 local function GetClosestTarget()
     local mouseLoc = UserInputService:GetMouseLocation()
     local center
+    
     if AimbotSettings.Mode == "Mouse (1st Person)" then
-        -- In 1st person, the mouse is fixed at the center of the screen
-        local guiInset = game:GetService("GuiService"):GetGuiInset()
-        center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
+        -- In 1st person, use camera ray casting to find true crosshair position
+        center = getTrueCrosshairPosition()
     else
-        -- In 3rd person, use direct mouse location with bias correction for weapon displacement
+        -- In 3rd person, combine camera ray with mouse position for accuracy
+        local trueCrosshair = getTrueCrosshairPosition()
         local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         screenCenter = screenCenter - (guiInset / 2)
         
-        -- Apply immediate bias correction toward screen center for extreme displacements
-        local displacement = mouseLoc - screenCenter
-        local distanceFactor = displacement.Magnitude / (Camera.ViewportSize.X * 0.4)
+        -- Check displacement between mouse and true crosshair
+        local crosshairDisplacement = (trueCrosshair - screenCenter).Magnitude
+        local mouseDisplacement = (mouseLoc - screenCenter).Magnitude
         
-        if distanceFactor > 1 then
-            -- Apply gentle correction toward center without smoothing delays
-            local correctionStrength = math.min((distanceFactor - 1) * 0.3, 0.4)
-            center = mouseLoc - (displacement * correctionStrength)
+        -- If crosshair is significantly displaced, use it; otherwise use mouse
+        if crosshairDisplacement > mouseDisplacement * 0.5 and crosshairDisplacement > 50 then
+            center = trueCrosshair
         else
-            -- Direct mouse tracking
-            center = mouseLoc
+            -- Apply bias correction toward true crosshair position
+            local displacement = mouseLoc - trueCrosshair
+            local distanceFactor = displacement.Magnitude / (Camera.ViewportSize.X * 0.3)
+            
+            if distanceFactor > 0.5 then
+                local correctionStrength = math.min(distanceFactor * 0.4, 0.6)
+                center = mouseLoc - (displacement * correctionStrength)
+            else
+                center = mouseLoc
+            end
         end
     end
     
@@ -855,30 +883,38 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle
+    -- FOV circle - use same logic as GetClosestTarget for consistency
     local mouseLoc = UserInputService:GetMouseLocation()
     local fovCenter
+    
     if AimbotSettings.Mode == "Mouse (1st Person)" then
-        -- In 1st person, the mouse is fixed at the center of the screen
-        local guiInset = game:GetService("GuiService"):GetGuiInset()
-        fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
+        -- In 1st person, use camera ray casting to find true crosshair position
+        fovCenter = getTrueCrosshairPosition()
     else
-        -- In 3rd person, use direct mouse location with bias correction for weapon displacement
+        -- In 3rd person, combine camera ray with mouse position for accuracy
+        local trueCrosshair = getTrueCrosshairPosition()
         local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         screenCenter = screenCenter - (guiInset / 2)
         
-        -- Apply immediate bias correction toward screen center for extreme displacements
-        local displacement = mouseLoc - screenCenter
-        local distanceFactor = displacement.Magnitude / (Camera.ViewportSize.X * 0.4)
+        -- Check displacement between mouse and true crosshair
+        local crosshairDisplacement = (trueCrosshair - screenCenter).Magnitude
+        local mouseDisplacement = (mouseLoc - screenCenter).Magnitude
         
-        if distanceFactor > 1 then
-            -- Apply gentle correction toward center without smoothing delays
-            local correctionStrength = math.min((distanceFactor - 1) * 0.3, 0.4)
-            fovCenter = mouseLoc - (displacement * correctionStrength)
+        -- If crosshair is significantly displaced, use it; otherwise use mouse
+        if crosshairDisplacement > mouseDisplacement * 0.5 and crosshairDisplacement > 50 then
+            fovCenter = trueCrosshair
         else
-            -- Direct mouse tracking
-            fovCenter = mouseLoc
+            -- Apply bias correction toward true crosshair position
+            local displacement = mouseLoc - trueCrosshair
+            local distanceFactor = displacement.Magnitude / (Camera.ViewportSize.X * 0.3)
+            
+            if distanceFactor > 0.5 then
+                local correctionStrength = math.min(distanceFactor * 0.4, 0.6)
+                fovCenter = mouseLoc - (displacement * correctionStrength)
+            else
+                fovCenter = mouseLoc
+            end
         end
     end
 
