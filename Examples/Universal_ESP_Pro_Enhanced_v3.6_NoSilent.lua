@@ -862,7 +862,7 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         pcall(UpdateESP, e)
     end
 
-    -- FOV circle - use same logic as GetClosestTarget for consistency
+    -- FOV circle - ALWAYS follows cursor perfectly in 3rd person
     local mouseLoc = UserInputService:GetMouseLocation()
     local fovCenter
     
@@ -871,11 +871,11 @@ local _wmConn = RunService.RenderStepped:Connect(function()
         local guiInset = game:GetService("GuiService"):GetGuiInset()
         fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) - (guiInset / 2)
     else
-        -- In 3rd person, use actual mouse cursor location
+        -- In 3rd person, ALWAYS use direct mouse cursor location regardless of gun mechanics
         fovCenter = mouseLoc
     end
 
-    if AimbotSettings.ShowFOV and AimbotSettings.Enabled then
+    if AimbotSettings.ShowFOV then
         FovCircle.Position    = fovCenter
         FovCircle.Radius      = AimbotSettings.FOV
         FovCircle.Color       = AimbotSettings.FOVColor
