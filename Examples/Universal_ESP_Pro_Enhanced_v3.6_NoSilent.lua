@@ -544,7 +544,7 @@ GbAim:AddToggle("AimbotEnabled", {
     Tooltip = "Rotate camera toward nearest target within FOV",
 })
 GbAim:AddLabel("Hold Key"):AddKeyPicker("AimbotKey", {
-    Default = "RightMouseButton",
+    Default = "MB2",
     Mode    = "Hold",
     Text    = "Aim",
     Tooltip = "Hold this key to activate aimbot",
