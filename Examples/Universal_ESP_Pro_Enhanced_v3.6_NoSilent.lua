@@ -109,7 +109,6 @@ local function SaveConfig()
         writefile(CONFIG_FILE, HttpService:JSONEncode(DeepSerialize(Settings)))
     end)
     if ok then
-        print("[ESP] Config saved.")
         Notify("Config Saved", "Written to " .. CONFIG_FILE, 3)
     else
         warn("[ESP] Save failed: " .. tostring(err))
@@ -134,7 +133,6 @@ local function LoadConfig()
                 end
             end
         end
-        print("[ESP] Config loaded.")
         Notify("Config Loaded", "Restored from " .. CONFIG_FILE, 3)
     else
         Notify("No Config Found", "Save a config first.", 4)
@@ -1290,7 +1288,6 @@ Library:OnUnload(function()
         RemoveESP(player)
     end
     pcall(function() FovCircle:Remove() end)
-    print("[Universal ESP] Unloaded.")
 end)
 
 -- ══════════════════════════════════════════
@@ -1305,4 +1302,3 @@ getgenv().UniversalESP = {
 
 SaveManager:LoadAutoloadConfig()
 Notify("Universal ESP Pro Enhanced", "Loaded! Press End to toggle menu.", 5)
-print("[Universal ESP Pro Enhanced v3.6] Loaded successfully.")
