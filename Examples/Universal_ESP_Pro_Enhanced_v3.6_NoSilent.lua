@@ -392,6 +392,16 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     
     -- Only intercept calls from the game, not from exploits
     if not checkcaller() and canUseSilentAim() then
+        -- Get calling script info to avoid interfering with Roblox internal systems
+        local info = debug.getinfo(2, "s")
+        local source = info and info.source or ""
+        
+        -- Exclude Roblox internal scripts (PlayerModule, CameraModule, etc.)
+        if source:match("PlayerModule") or source:match("CameraModule") or 
+           source:match("ZoomController") or source:match("Popper") or
+           source:match("CoreScript") or source:match("RobloxGui") then
+            return oldNamecall(self, unpack(args))
+        end
         local methodEnabled = SilentAimSettings.Method == "All"
         
         -- Hook FindPartOnRayWithIgnoreList (RCL guns)
